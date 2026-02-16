@@ -24,7 +24,7 @@ These optimizations were developed in collaboration with **DeepSeek AI**, which 
 
 ## Live Demo
 
-A live instance is running at [`m.easydemo.org`](https://m.easydemo.org). You can verify federation compatibility using the [Matrix Federation Tester](https://federationtester.matrix.org/api/report?server_name=m.easydemo.org) or view the [full JSON report](https://federationtester.matrix.org/report/m.easydemo.org).
+You can verify federation compatibility using the [Matrix Federation Tester](https://federationtester.matrix.org/api/report?server_name=m.easydemo.org) or view the [full JSON report](https://federationtester.matrix.org/report/m.easydemo.org).
 
 ## Quick Start
 
