@@ -1,61 +1,37 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "matrix-worker",
+  "name": "matrix-workers",
   "main": "src/index.ts",
-  "compatibility_date": "2024-11-01",
+  "compatibility_date": "2025-02-16",
   "compatibility_flags": ["nodejs_compat"],
-  "account_id": "870e8509c92b6115e64a0cd8bb95ea97",
+  "account_id": "f485198b45c5ed99b46bda5a2dc30c12",
 
   "observability": {
     "enabled": true
   },
 
-  // D1 Database for relational data (users, rooms, events, memberships)
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "tuwunel-db",
-      "database_id": "36b31035-03de-40ed-8940-753d325bae27"
+      "database_name": "my-matrix-db",
+      "database_id": "c3da244c-61e2-44dd-ba23-45a57f6e6c08"
     }
   ],
 
-  // KV Namespaces for fast lookups
+  // KV Namespaces - only for non-E2EE data
   "kv_namespaces": [
-    {
-      "binding": "SESSIONS",
-      "id": "366e0561b7054c2ebb07ceb44e8f92a5"
-    },
-    {
-      "binding": "DEVICE_KEYS",
-      "id": "9c44be58428049ddbc69727e0e0ff3ef"
-    },
-    {
-      "binding": "CACHE",
-      "id": "121081991bbb4b44806dd973ea185404"
-    },
-    {
-      "binding": "CROSS_SIGNING_KEYS",
-      "id": "b3f387bf735b4fc684a25656f1808abc"
-    },
-    {
-      "binding": "ACCOUNT_DATA",
-      "id": "326dab002ae54bc7a10b99daad566670"
-    },
-    {
-      "binding": "ONE_TIME_KEYS",
-      "id": "c3739acd328748f5a966c3b7ff2a6352"
-    }
+   { "binding": "SESSIONS", "id": "81310bf9a07c471d9353c415cb6a498e" },
+   { "binding": "CACHE", "id": "c09751f14ea94edc91e8eda533ce204a" },
+   { "binding": "ACCOUNT_DATA", "id": "75a01cc565c745e989983b96a9a80507" }
   ],
 
-  // R2 Bucket for media storage
   "r2_buckets": [
     {
       "binding": "MEDIA",
-      "bucket_name": "tuwunel-media"
+      "bucket_name": "my-matrix-media"
     }
   ],
 
-  // Durable Objects for real-time sync and room coordination
   "durable_objects": {
     "bindings": [
       {
@@ -79,7 +55,7 @@
         "class_name": "AdminDurableObject"
       },
       {
-        "name": "USER_KEYS",
+        "name": "USER_KEYS_DO",  // ✅ Fixed: matches code expectation
         "class_name": "UserKeysDurableObject"
       },
       {
@@ -120,56 +96,40 @@
     }
   ],
 
-  // Environment variables
   "vars": {
-    "SERVER_NAME": "m.easydemo.org",
+    "SERVER_NAME": "matrix.dev.deepmeow.cc",
     "SERVER_VERSION": "0.1.0",
-    "TURN_KEY_ID": "42586a3b6b8415d1e69e825f169f3108",
-    "LIVEKIT_API_KEY": "devkey",
-    "LIVEKIT_URL": "wss://livekit.easydemo.org"
+  //  "TURN_KEY_ID": "YOUR_TURN_KEY_ID",
+  //  "LIVEKIT_API_KEY": "YOUR_LIVEKIT_API_KEY",
+  //  "LIVEKIT_URL": "YOUR_LIVEKIT_URL",
+    
+    // Sliding Sync performance tuning
+    "SLIDING_SYNC_MAX_CONCURRENT_LISTS": "5",
+    "SLIDING_SYNC_CACHE_TTL_MS": "30000",
+    "SLIDING_SYNC_ROOM_BATCH_SIZE": "50",
+    "SLIDING_SYNC_PRECOMPUTE_TTL": "300",
+    "SLIDING_SYNC_SLOW_THRESHOLD_MS": "1000"
   },
 
-  // Secrets should be set using:
-  // npx wrangler secret put TURN_API_TOKEN
-  // npx wrangler secret put CALLS_APP_ID
-  // npx wrangler secret put CALLS_APP_SECRET
-  // npx wrangler secret put LIVEKIT_API_SECRET
-  //
-  // For email verification (3PID) via Cloudflare Email Service:
-  // npx wrangler secret put EMAIL_FROM       # From address (e.g., "noreply@m.easydemo.org")
-  //
-  // For direct APNs push notifications (optional - bypasses Sygnal):
-  // npx wrangler secret put APNS_KEY_ID      # Key ID from Apple Developer Portal
-  // npx wrangler secret put APNS_TEAM_ID     # Apple Developer Team ID
-  // npx wrangler secret put APNS_PRIVATE_KEY # Contents of .p8 file
-  // npx wrangler secret put APNS_ENVIRONMENT # "production" or "sandbox" (default: production)
-  //
-  // To create a Cloudflare Realtime SFU app:
-  // 1. Go to https://dash.cloudflare.com/?to=/:account/calls
-  // 2. Create a new Realtime App
-  // 3. Copy the App ID and App Secret
-  // Or use the API: https://developers.cloudflare.com/api/resources/calls/subresources/sfu/methods/create/
+  // Secrets configuration remains the same
+  // ...
 
-  // Custom domain routing
   "routes": [
     {
-      "pattern": "m.easydemo.org",
+      "pattern": "matrix.yourdomain.com",
       "custom_domain": true
     }
   ],
 
-  // Workers VPC for LiveKit connectivity
-  "vpc_services": [
-    {
-      "binding": "LIVEKIT_API",
-      "service_id": "019b6a8b-4d9e-7751-bef5-7d9a3f1807a9"
-    }
-  ],
+  //"vpc_services": [
+  //  {
+  //    "binding": "LIVEKIT_API",
+  //    "service_id": "YOUR_SERVICE_ID"
+  //  }
+  //],
 
-  // Cloudflare Email Service for 3PID email verification
   "send_email": [{ "name": "EMAIL", "remote": true }],
 
-  // Cloudflare Workflows for durable multi-step operations
   "workflows": [
     {
       "name": "room-join-workflow",
