@@ -14,15 +14,15 @@
     {
       "binding": "DB",
       "database_name": "my-matrix-db",
-      "database_id": "YOUR_DATABASE_ID"
+      "database_id": "c3da244c-61e2-44dd-ba23-45a57f6e6c08"
     }
   ],
 
   // KV Namespaces - only for non-E2EE data
   "kv_namespaces": [
-   { "binding": "SESSIONS", "id": "YOUR_SESSIONS_KV_ID" },
-   { "binding": "CACHE", "id": "YOUR_CACHE_KV_ID" },
-   { "binding": "ACCOUNT_DATA", "id": "YOUR_ACCOUNT_DATA_KV_ID" }
+   { "binding": "SESSIONS", "id": "81310bf9a07c471d9353c415cb6a498e" },
+   { "binding": "CACHE", "id": "c09751f14ea94edc91e8eda533ce204a" },
+   { "binding": "ACCOUNT_DATA", "id": "75a01cc565c745e989983b96a9a80507" }
   ],
 
   "r2_buckets": [
