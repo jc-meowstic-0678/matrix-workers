@@ -1,10 +1,10 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "matrix-worker",
+  "name": "my-matrix-server",
   "main": "src/index.ts",
   "compatibility_date": "2025-02-16",
   "compatibility_flags": ["nodejs_compat"],
-  "account_id": "870e8509c92b6115e64a0cd8bb95ea97",
+  "account_id": "YOUR_ACCOUNT_ID",
 
   "observability": {
     "enabled": true
@@ -13,31 +13,22 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "tuwunel-db",
-      "database_id": "36b31035-03de-40ed-8940-753d325bae27"
+      "database_name": "my-matrix-db",
+      "database_id": "YOUR_DATABASE_ID"
     }
   ],
 
   // KV Namespaces - only for non-E2EE data
   "kv_namespaces": [
-    {
-      "binding": "SESSIONS",
-      "id": "366e0561b7054c2ebb07ceb44e8f92a5"
-    },
-    {
-      "binding": "CACHE",
-      "id": "121081991bbb4b44806dd973ea185404"
-    },
-    {
-      "binding": "ACCOUNT_DATA",
-      "id": "326dab002ae54bc7a10b99daad566670"
-    }
+   { "binding": "SESSIONS", "id": "YOUR_SESSIONS_KV_ID" },
+   { "binding": "CACHE", "id": "YOUR_CACHE_KV_ID" },
+   { "binding": "ACCOUNT_DATA", "id": "YOUR_ACCOUNT_DATA_KV_ID" }
   ],
 
   "r2_buckets": [
     {
       "binding": "MEDIA",
-      "bucket_name": "tuwunel-media"
+      "bucket_name": "my-matrix-media"
     }
   ],
 
@@ -106,11 +97,11 @@
   ],
 
   "vars": {
-    "SERVER_NAME": "m.easydemo.org",
+    "SERVER_NAME": "matrix.yourdomain.com",
     "SERVER_VERSION": "0.1.0",
-    "TURN_KEY_ID": "42586a3b6b8415d1e69e825f169f3108",
-    "LIVEKIT_API_KEY": "devkey",
-    "LIVEKIT_URL": "wss://livekit.easydemo.org",
+    "TURN_KEY_ID": "YOUR_TURN_KEY_ID",
+    "LIVEKIT_API_KEY": "YOUR_LIVEKIT_API_KEY",
+    "LIVEKIT_URL": "YOUR_LIVEKIT_URL",
     
     // Sliding Sync performance tuning
     "SLIDING_SYNC_MAX_CONCURRENT_LISTS": "5",
@@ -125,7 +116,7 @@
 
   "routes": [
     {
-      "pattern": "m.easydemo.org",
+      "pattern": "matrix.yourdomain.com",
       "custom_domain": true
     }
   ],
@@ -133,7 +124,7 @@
   "vpc_services": [
     {
       "binding": "LIVEKIT_API",
-      "service_id": "019b6a8b-4d9e-7751-bef5-7d9a3f1807a9"
+      "service_id": "YOUR_SERVICE_ID"
     }
   ],
 
