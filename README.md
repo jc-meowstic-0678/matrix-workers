@@ -24,7 +24,7 @@ These optimizations were developed in collaboration with **DeepSeek AI**, which 
 
 ## Live Demo
 
-You can verify federation compatibility using the [Matrix Federation Tester](https://federationtester.matrix.org/api/report?server_name=m.easydemo.org) or view the [full JSON report](https://federationtester.matrix.org/report/m.easydemo.org).
+You can verify federation compatibility using the [Matrix Federation Tester](https://federationtester.matrix.org/) 
 
 ## Quick Start
 
@@ -69,7 +69,7 @@ For 3PID email verification support, configure Cloudflare Email Service (current
 
 ```bash
 npx wrangler secret put EMAIL_FROM
-# Example: noreply@m.easydemo.org
+# Example: noreply@matrix.yourdomain.com
 ```
 
 ## 🏗️ Architecture
