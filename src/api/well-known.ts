@@ -1,20 +1,21 @@
-// well-known.ts
+import express from 'express';
 
-// This file implements the .well-known endpoints for Matrix federation discovery.
+const router = express.Router();
 
-import { Request, Response } from 'express';
+// Well-known endpoint for Matrix federation
+router.get('/.well-known/matrix/server', (req, res) => {
+    res.json({
+        names: ["matrix.org"], // Replace with your server name
+        "alt-serv": {
+            "matrix": [
+                {
+                    "host": "your-federation-server.com", // Replace with your federation server
+                    "port": 443,
+                    "transport": "websocket"
+                }
+            ]
+        }
+    });
+});
 
-typedef WellKnownResponse = {  
-    "m.server": string;  
-};
-
-// Endpoint for .well-known
-export const wellKnownHandler = (req: Request, res: Response) => {  
-    const response: WellKnownResponse = {  
-        "m.server": "matrix.example.com" // Replace with actual Matrix server URL  
-    };  
-    res.json(response);  
-}; 
-
-// Note: To use this handler, you need to set up an Express route:  
-// app.get('/.well-known/matrix/server', wellKnownHandler);  
+export default router;
