@@ -97,11 +97,11 @@
   ],
 
   "vars": {
-    "SERVER_NAME": "matrix.yourdomain.com",
+    "SERVER_NAME": "matrix.dev.deepmeow.cc",
     "SERVER_VERSION": "0.1.0",
-    "TURN_KEY_ID": "YOUR_TURN_KEY_ID",
-    "LIVEKIT_API_KEY": "YOUR_LIVEKIT_API_KEY",
-    "LIVEKIT_URL": "YOUR_LIVEKIT_URL",
+  //  "TURN_KEY_ID": "YOUR_TURN_KEY_ID",
+  //  "LIVEKIT_API_KEY": "YOUR_LIVEKIT_API_KEY",
+  //  "LIVEKIT_URL": "YOUR_LIVEKIT_URL",
     
     // Sliding Sync performance tuning
     "SLIDING_SYNC_MAX_CONCURRENT_LISTS": "5",
@@ -121,12 +121,12 @@
     }
   ],
 
-  "vpc_services": [
-    {
-      "binding": "LIVEKIT_API",
-      "service_id": "YOUR_SERVICE_ID"
-    }
-  ],
+  //"vpc_services": [
+  //  {
+  //    "binding": "LIVEKIT_API",
+  //    "service_id": "YOUR_SERVICE_ID"
+  //  }
+  //],
 
   "send_email": [{ "name": "EMAIL", "remote": true }],
 
