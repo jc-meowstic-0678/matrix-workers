@@ -42,7 +42,7 @@ app.get('/_matrix/key/v2/server', async (c) => {
 
   // Get or create server signing keys (prefer v2 keys with proper Ed25519)
   let keys = await c.env.DB.prepare(
-    `SELECT key_id, public_key, private_key_jwk, key_version, valid_from, valid_until
+    `SELECT key_id, public_key, private_key as private_key_jwk, key_version, valid_from, valid_until
      FROM server_keys WHERE is_current = 1 ORDER BY key_version DESC`
   ).all<{
     key_id: string;
