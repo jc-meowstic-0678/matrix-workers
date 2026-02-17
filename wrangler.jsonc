@@ -1,10 +1,10 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "my-matrix-server",
+  "name": "matrix-workers",
   "main": "src/index.ts",
   "compatibility_date": "2025-02-16",
   "compatibility_flags": ["nodejs_compat"],
-  "account_id": "YOUR_ACCOUNT_ID",
+  "account_id": "f485198b45c5ed99b46bda5a2dc30c12",
 
   "observability": {
     "enabled": true
