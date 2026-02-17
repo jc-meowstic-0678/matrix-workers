@@ -41,7 +41,11 @@ import identity from './api/identity';
 // import qrLogin from './api/qr-login'; // QR feature commented out - requires MSC4108/OIDC for Element X
 import oidcAuth from './api/oidc-auth';
 import oauth from './api/oauth';
+
+// NEW: Import admin dashboard and API routes
 import { adminDashboardHtml } from './admin/dashboard';
+import adminApi from './admin/routes';
+
 import { rateLimitMiddleware } from './middleware/rate-limit';
 import { requireAuth } from './middleware/auth';
 import { analyticsMiddleware } from './middleware/analytics';
@@ -56,7 +60,6 @@ export { RoomJoinWorkflow, PushNotificationWorkflow, FederationCatchupWorkflow, 
 const app = new Hono<AppEnv>();
 
 // CORS for Matrix clients - MUST BE FIRST to ensure headers are always sent
-// (even on error responses from rate limiter or other middleware)
 app.use('*', cors({
   origin: '*',
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -75,23 +78,19 @@ app.use('/_matrix/*', rateLimitMiddleware);
 // Health check
 app.get('/health', (c) => c.json({ status: 'ok', server: 'matrix-worker' }));
 
-// Admin dashboard - serve HTML with security headers
-app.get('/admin', (c) => {
-  const html = adminDashboardHtml(c.env.SERVER_NAME);
-  return c.html(html, 200, {
-    // Content-Security-Policy for XSS protection
-    // 'unsafe-inline' is needed for the inline scripts/styles in the dashboard
-    // This could be improved by moving scripts to external files with nonces
-    'Content-Security-Policy':
-      "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'",
-    'X-Content-Type-Options': 'nosniff',
-    'X-Frame-Options': 'DENY',
-    'Referrer-Policy': 'strict-origin-when-cross-origin',
-  });
-});
+// ============================================
+// Admin Routes (with authentication)
+// ============================================
 
-app.get('/admin/', (c) => {
-  const html = adminDashboardHtml(c.env.SERVER_NAME);
+// Mount admin API routes FIRST (before the HTML route to ensure proper routing)
+app.route('/admin', adminApi);
+
+// Admin dashboard HTML - check authentication status before rendering
+app.get('/admin', async (c) => {
+  const adminToken = await c.env.CACHE.get('admin:session');
+  const isAuthenticated = !!adminToken;
+  
+  const html = adminDashboardHtml(c.env.SERVER_NAME, isAuthenticated);
   return c.html(html, 200, {
     'Content-Security-Policy':
       "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'",
@@ -101,7 +100,26 @@ app.get('/admin/', (c) => {
   });
 });
 
-// Admin API routes
+// Handle trailing slash
+app.get('/admin/', async (c) => {
+  const adminToken = await c.env.CACHE.get('admin:session');
+  const isAuthenticated = !!adminToken;
+  
+  const html = adminDashboardHtml(c.env.SERVER_NAME, isAuthenticated);
+  return c.html(html, 200, {
+    'Content-Security-Policy':
+      "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'",
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+  });
+});
+
+// ============================================
+// Matrix API Routes
+// ============================================
+
+// Admin API routes (legacy - keep for backward compatibility)
 app.route('/', admin);
 
 // QR code login landing page - commented out, requires MSC4108/OIDC for Element X
@@ -156,6 +174,10 @@ app.route('/', identity);
 // Server-Server (Federation) API
 app.route('/', federation);
 
+// ============================================
+// Additional Matrix Endpoints
+// ============================================
+
 // Capabilities endpoint
 app.get('/_matrix/client/v3/capabilities', (c) => {
   return c.json({
@@ -193,14 +215,11 @@ app.get('/_matrix/client/v3/capabilities', (c) => {
   });
 });
 
-// Push rules now handled by push.ts
-
 // Filter endpoints - persist filters in KV for sync optimization
 app.post('/_matrix/client/v3/user/:userId/filter', requireAuth(), async (c) => {
   const userId = c.get('userId');
   const requestedUserId = c.req.param('userId');
 
-  // Users can only create filters for themselves
   if (userId !== requestedUserId) {
     return c.json({ errcode: 'M_FORBIDDEN', error: 'Cannot create filters for other users' }, 403);
   }
@@ -212,12 +231,11 @@ app.post('/_matrix/client/v3/user/:userId/filter', requireAuth(), async (c) => {
     return c.json({ errcode: 'M_BAD_JSON', error: 'Invalid JSON' }, 400);
   }
 
-  // Generate filter ID and store in KV
   const filterId = crypto.randomUUID().split('-')[0];
   await c.env.CACHE.put(
     `filter:${userId}:${filterId}`,
     JSON.stringify(filter),
-    { expirationTtl: 30 * 24 * 60 * 60 } // 30 days TTL
+    { expirationTtl: 30 * 24 * 60 * 60 }
   );
 
   return c.json({ filter_id: filterId });
@@ -228,14 +246,12 @@ app.get('/_matrix/client/v3/user/:userId/filter/:filterId', requireAuth(), async
   const requestedUserId = c.req.param('userId');
   const filterId = c.req.param('filterId');
 
-  // Users can only read their own filters
   if (userId !== requestedUserId) {
     return c.json({ errcode: 'M_FORBIDDEN', error: 'Cannot read filters for other users' }, 403);
   }
 
   const filterJson = await c.env.CACHE.get(`filter:${userId}:${filterId}`);
   if (!filterJson) {
-    // Return empty filter if not found (per spec, unknown filter IDs should return empty)
     return c.json({});
   }
 
@@ -247,18 +263,8 @@ app.get('/_matrix/client/v3/user/:userId/filter/:filterId', requireAuth(), async
   }
 });
 
-// Account data endpoints now handled by account-data.ts
-
-// Presence endpoints now handled by presence.ts
-
-// Search endpoint - now handled by search.ts
+// Search endpoint
 app.route('/', search);
-
-// Typing notifications now handled by typing.ts
-
-// Read receipts now handled by receipts.ts
-
-// Device management now handled by devices.ts
 
 // Public rooms directory
 app.get('/_matrix/client/v3/publicRooms', async (c) => {
@@ -274,7 +280,6 @@ app.get('/_matrix/client/v3/publicRooms', async (c) => {
   const publicRooms: any[] = [];
 
   for (const room of rooms.results) {
-    // Get room name and topic from state
     const nameEvent = await db.prepare(
       `SELECT e.content FROM room_state rs
        JOIN events e ON rs.event_id = e.event_id
@@ -287,7 +292,6 @@ app.get('/_matrix/client/v3/publicRooms', async (c) => {
        WHERE rs.room_id = ? AND rs.event_type = 'm.room.topic'`
     ).bind(room.room_id).first<{ content: string }>();
 
-    // Get member count
     const memberCount = await db.prepare(
       `SELECT COUNT(*) as count FROM room_memberships WHERE room_id = ? AND membership = 'join'`
     ).bind(room.room_id).first<{ count: number }>();
@@ -309,14 +313,13 @@ app.get('/_matrix/client/v3/publicRooms', async (c) => {
 });
 
 app.post('/_matrix/client/v3/publicRooms', async (c) => {
-  // Same as GET but with search/filter support
   return c.json({
     chunk: [],
     total_room_count_estimate: 0,
   });
 });
 
-// User directory search (requires authentication per Matrix spec)
+// User directory search
 app.post('/_matrix/client/v3/user_directory/search', requireAuth(), async (c) => {
   const db = c.env.DB;
   const requestingUserId = c.get('userId');
@@ -331,18 +334,10 @@ app.post('/_matrix/client/v3/user_directory/search', requireAuth(), async (c) =>
   const searchTerm = body.search_term || '';
   const limit = Math.min(body.limit || 10, 50);
 
-  console.log('[user_directory] Search request:', {
-    requestingUserId,
-    searchTerm,
-    limit,
-    userAgent: c.req.header('User-Agent'),
-  });
-
   if (!searchTerm) {
     return c.json({ results: [], limited: false });
   }
 
-  // Search for users using FTS5 for ranked full-text search
   const ftsSearchTerm = searchTerm.replace(/['"*()]/g, ' ').trim();
   const results = await db.prepare(`
     SELECT u.user_id, u.display_name, u.avatar_url
@@ -361,24 +356,16 @@ app.post('/_matrix/client/v3/user_directory/search', requireAuth(), async (c) =>
   }>();
 
   const limited = results.results.length > limit;
-  // Return explicit null values (not undefined/omitted) so Element X knows user exists
   const users = results.results.slice(0, limit).map(u => ({
     user_id: u.user_id,
     display_name: u.display_name || null,
     avatar_url: u.avatar_url || null,
   }));
 
-  console.log('[user_directory] Search results:', {
-    searchTerm,
-    resultCount: users.length,
-    limited,
-    firstResult: users[0],
-  });
-
   return c.json({ results: users, limited });
 });
 
-// Third-party protocols (stub - no bridges configured)
+// Third-party protocols (stub)
 app.get('/_matrix/client/v3/thirdparty/protocols', async (c) => {
   return c.json({});
 });
@@ -391,15 +378,12 @@ app.get('/_matrix/client/unstable/org.matrix.msc3814.v1/dehydrated_device', asyn
   }, 404);
 });
 
-// OIDC auth metadata endpoints are now handled by oidc-auth.ts
-// Legacy unstable endpoint for backwards compatibility
+// OIDC auth metadata endpoints (legacy redirects)
 app.get('/_matrix/client/unstable/org.matrix.msc2965/auth_issuer', async (c) => {
-  // Redirect to the stable endpoint implementation
   return c.redirect('/_matrix/client/v1/auth_metadata', 307);
 });
 
 app.get('/_matrix/client/unstable/org.matrix.msc2965/auth_metadata', async (c) => {
-  // Redirect to the stable endpoint implementation
   return c.redirect('/_matrix/client/v1/auth_metadata', 307);
 });
 
