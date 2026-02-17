@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Tuwunel is a Matrix homeserver (spec v1.17) running entirely on Cloudflare Workers edge infrastructure. It uses D1 (SQLite), KV, R2, Durable Objects, and Workflows. The live instance runs at `m.easydemo.org`.
+This project is a proof of concept for a Matrix homeserver (spec v1.17) running entirely on Cloudflare Workers edge infrastructure. It uses D1 (SQLite), KV, R2, Durable Objects, and Workflows. A live instance based on the original source of this fork runs at `m.easydemo.org`.
 
 The `dev` branch includes significant performance optimizations for Sliding Sync and a critical migration of E2EE keys from KV to Durable Objects for strong consistency.
 
@@ -61,7 +61,7 @@ Important: The dev branch has migrated E2EE keys from KV to Durable Objects. Onl
 }
 
 "d1_databases": [
-  { "binding": "DB", "database_name": "tuwunel-db", "database_id": "..." }
+  { "binding": "DB", "database_name": "my-matrix-db", "database_id": "..." }
 ]
 
 "r2_buckets": [
@@ -189,7 +189,7 @@ Built-in metrics available via the admin dashboard and wrangler tail:
 npx wrangler tail --format pretty | grep "Slow sync"
 
 # Check query performance
-npx wrangler d1 execute tuwunel-db --remote --command="
+npx wrangler d1 execute my-matrix-db --remote --command="
   SELECT * FROM sqlite_master WHERE type='index';
 "
 ```
