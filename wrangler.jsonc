@@ -97,7 +97,7 @@
   ],
 
   "vars": {
-    "SERVER_NAME": "matrix.dev.deepmeow.cc",
+    "SERVER_NAME": "matrix.deepmeow.cc",
     "SERVER_VERSION": "0.1.0",
   //  "TURN_KEY_ID": "YOUR_TURN_KEY_ID",
   //  "LIVEKIT_API_KEY": "YOUR_LIVEKIT_API_KEY",
@@ -116,7 +116,7 @@
 
   "routes": [
     {
-      "pattern": "matrix.yourdomain.com",
+      "pattern": "matrix.deepmeow.cc",
       "custom_domain": true
     }
   ],
