@@ -46,9 +46,9 @@ app.get('/_matrix/key/v2/server', async (c) => {
   const serverName = c.env.SERVER_NAME;
 
   try {
-    // Get or create server signing keys - using correct column alias
+    // Get or create server signing keys
     let keys = await c.env.DB.prepare(
-      `SELECT key_id, public_key, private_key as private_key_jwk, key_version, valid_from, valid_until
+      `SELECT key_id, public_key, private_key_jwk, key_version, valid_from, valid_until
        FROM server_keys WHERE is_current = 1 ORDER BY key_version DESC`
     ).all<{
       key_id: string;
