@@ -51,7 +51,7 @@ import { requireAuth } from './middleware/auth';
 import { analyticsMiddleware } from './middleware/analytics';
 
 // Import Durable Objects
-export { RoomDurableObject, SyncDurableObject, FederationDurableObject, CallRoomDurableObject, AdminDurableObject, UserKeysDurableObject, PushDurableObject, RateLimitDurableObject } from './durable-objects';
+export { RoomDurableObject, SyncDurableObject, FederationDurableObject, CallRoomDurableObject, AdminDurableObject, UserKeysDurableObject, PushDurableObject, RateLimitDurableObject, RoomNotificationQueue } from './durable-objects';
 
 // Import Workflows
 export { RoomJoinWorkflow, PushNotificationWorkflow, FederationCatchupWorkflow, MediaCleanupWorkflow, StateCompactionWorkflow } from './workflows';
