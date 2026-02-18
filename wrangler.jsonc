@@ -65,6 +65,10 @@
       {
         "name": "RATE_LIMIT",
         "class_name": "RateLimitDurableObject"
+      },
+      {
+        "name": "ROOM_NOFIFICATION_QUEUE",
+        "class_name": "RoomNotificationQueue"
       }
     ]
   },
@@ -93,6 +97,10 @@
     {
       "tag": "v6",
       "new_classes": ["RateLimitDurableObject"]
+    },
+    {
+      "tag": "v7",
+      "new_classes": ["RoomNotificationQueue"]
     }
   ],
 

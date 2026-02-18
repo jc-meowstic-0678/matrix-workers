@@ -1,8 +1,25 @@
 // Database service layer for D1
+// UPDATED: Now uses queue-based notification system for scalability
 
 import type { User, Device, Room, PDU, Membership, Env } from '../types';
 
-// User operations
+// ============================================
+// Queue Helpers
+// ============================================
+
+// Get or create the RoomNotificationQueue instance for a room
+function getRoomNotificationQueue(env: Env, roomId: string): DurableObjectStub {
+  // Use a hash of the room ID to distribute across queue instances
+  // This ensures all notifications for a room go to the same queue
+  const queueId = `room-queue:${roomId}`;
+  const id = env.ROOM_NOTIFICATION_QUEUE.idFromName(queueId);
+  return env.ROOM_NOTIFICATION_QUEUE.get(id);
+}
+
+// ============================================
+// User operations (unchanged)
+// ============================================
+
 export async function createUser(
   db: D1Database,
   userId: string,
@@ -100,7 +117,10 @@ export async function updateUserProfile(
   }
 }
 
-// Device operations
+// ============================================
+// Device operations (unchanged)
+// ============================================
+
 export async function createDevice(
   db: D1Database,
   userId: string,
@@ -172,7 +192,10 @@ export async function deleteDevice(
   ).bind(userId, deviceId).run();
 }
 
-// Access token operations
+// ============================================
+// Access token operations (unchanged)
+// ============================================
+
 export async function createAccessToken(
   db: D1Database,
   tokenId: string,
@@ -214,7 +237,10 @@ export async function deleteAllUserTokens(db: D1Database, userId: string): Promi
   ).bind(userId).run();
 }
 
-// Room operations
+// ============================================
+// Room operations (unchanged)
+// ============================================
+
 export async function createRoom(
   db: D1Database,
   roomId: string,
@@ -251,7 +277,10 @@ export async function getRoom(db: D1Database, roomId: string): Promise<Room | nu
   };
 }
 
-// Event operations
+// ============================================
+// Event operations (unchanged)
+// ============================================
+
 export async function storeEvent(db: D1Database, event: PDU): Promise<number> {
   // Get the next stream ordering
   const lastOrdering = await db.prepare(
@@ -397,7 +426,10 @@ export async function getRoomEvents(
   return { events, end };
 }
 
-// Room state operations
+// ============================================
+// Room state operations (unchanged)
+// ============================================
+
 export async function getRoomState(
   db: D1Database,
   roomId: string
@@ -480,7 +512,10 @@ export async function getStateEvent(
   };
 }
 
-// Membership operations
+// ============================================
+// Membership operations (unchanged)
+// ============================================
+
 export async function updateMembership(
   db: D1Database,
   roomId: string,
@@ -558,7 +593,10 @@ export async function getRoomMembers(
   }));
 }
 
-// Room alias operations
+// ============================================
+// Room alias operations (unchanged)
+// ============================================
+
 export async function createRoomAlias(
   db: D1Database,
   alias: string,
@@ -583,7 +621,10 @@ export async function deleteRoomAlias(db: D1Database, alias: string): Promise<vo
   await db.prepare(`DELETE FROM room_aliases WHERE alias = ?`).bind(alias).run();
 }
 
-// Stream position for sync
+// ============================================
+// Stream position operations (unchanged)
+// ============================================
+
 export async function getLatestStreamPosition(db: D1Database): Promise<number> {
   const result = await db.prepare(
     `SELECT MAX(stream_ordering) as max_ordering FROM events`
@@ -634,7 +675,10 @@ export async function getEventsSince(
   }));
 }
 
-// Batch retrieve events by IDs
+// ============================================
+// Batch operations (unchanged)
+// ============================================
+
 export async function getEventsByIds(db: D1Database, eventIds: string[]): Promise<PDU[]> {
   if (eventIds.length === 0) return [];
 
@@ -677,7 +721,6 @@ export async function getEventsByIds(db: D1Database, eventIds: string[]): Promis
   }));
 }
 
-// Get the auth chain for an event (all auth_events recursively)
 export async function getAuthChain(db: D1Database, eventIds: string[]): Promise<PDU[]> {
   const seen = new Set<string>();
   const chain: PDU[] = [];
@@ -703,7 +746,6 @@ export async function getAuthChain(db: D1Database, eventIds: string[]): Promise<
   return chain;
 }
 
-// Get the state at a specific event (by traversing auth chain)
 export async function getStateAtEvent(db: D1Database, eventId: string): Promise<PDU[]> {
   const event = await getEvent(db, eventId);
   if (!event) return [];
@@ -722,7 +764,6 @@ export async function getStateAtEvent(db: D1Database, eventId: string): Promise<
   return Array.from(stateMap.values());
 }
 
-// Get servers that share rooms with a user
 export async function getServersInRoomsWithUser(db: D1Database, userId: string): Promise<string[]> {
   const result = await db.prepare(`
     SELECT DISTINCT
@@ -743,8 +784,14 @@ export async function getServersInRoomsWithUser(db: D1Database, userId: string):
     .filter((s): s is string => s !== null);
 }
 
-// Notify all room members' SyncDurableObjects when a new event is stored
-// This wakes up any long-polling sync requests waiting for events
+// ============================================
+// UPDATED: Notification system with queue-based fan-out
+// ============================================
+
+/**
+ * Notify all room members about a new event using a queue for scalability
+ * This replaces the old direct notification system that caused N+1 problems
+ */
 export async function notifyUsersOfEvent(
   env: Env,
   roomId: string,
@@ -757,32 +804,62 @@ export async function notifyUsersOfEvent(
       `SELECT user_id FROM room_memberships WHERE room_id = ? AND membership = 'join'`
     ).bind(roomId).all<{ user_id: string }>();
 
-    console.log('[database] Notifying', members.results.length, 'users of event', eventId,
-      'users:', members.results.map(m => m.user_id).join(', '));
+    const memberIds = members.results.map(m => m.user_id);
+    
+    if (memberIds.length === 0) {
+      return; // No members to notify
+    }
 
-    // Notify each user's SyncDurableObject in parallel
-    const notifications = members.results.map(async (member) => {
-      try {
-        const syncDO = env.SYNC.get(env.SYNC.idFromName(member.user_id));
-        await syncDO.fetch(new Request('http://internal/notify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            event_id: eventId,
-            room_id: roomId,
-            type: eventType,
-            timestamp: Date.now(),
-          }),
-        }));
-      } catch (error) {
-        // Don't fail the whole operation if one notification fails
-        console.error(`[database] Failed to notify user ${member.user_id} of event:`, error);
-      }
+    console.log(`[database] Queueing notification for ${memberIds.length} users in room ${roomId}`);
+
+    // Get the room's notification queue
+    const queue = getRoomNotificationQueue(env, roomId);
+
+    // Queue the notification for batched processing
+    // This is non-blocking - we don't await the response
+    queue.fetch(new Request('http://internal/queue-notification', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        roomId,
+        eventId,
+        eventType,
+        timestamp: Date.now(),
+        memberIds
+      })
+    })).catch(error => {
+      console.error(`[database] Failed to queue notification for room ${roomId}:`, error);
     });
 
-    await Promise.all(notifications);
   } catch (error) {
     // Log but don't fail - event storage was successful
-    console.error('[database] Failed to notify users of event:', error);
+    console.error('[database] Failed to queue notifications:', error);
+  }
+}
+
+/**
+ * Check if a user has an active WebSocket connection
+ * Used by the push notification system to decide between WebSocket and push
+ */
+export async function hasActiveWebSocket(
+  env: Env,
+  userId: string,
+  deviceId: string
+): Promise<boolean> {
+  try {
+    const syncDO = env.SYNC.get(env.SYNC.idFromName(userId));
+    const response = await syncDO.fetch(new Request('http://internal/has-websocket', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deviceId })
+    }));
+
+    if (!response.ok) return false;
+    
+    const { hasWebSocket } = await response.json();
+    return hasWebSocket;
+  } catch (error) {
+    console.error(`[database] Failed to check WebSocket for ${userId}:`, error);
+    return false;
   }
 }
