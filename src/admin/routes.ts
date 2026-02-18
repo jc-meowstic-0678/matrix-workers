@@ -1,19 +1,24 @@
 // src/admin/routes.ts
 import { Hono } from 'hono';
 import type { AppEnv } from '../types';
-import { requireAdminAuth, adminLogin, adminLogout, adminStatus } from './dashboard';
+import { requireAdminAuth, handleAdminLogin, handleAdminLogout, handleAdminStatus } from './auth';
 import { hashPassword } from '../utils/crypto';
+import { adminApi } from './index';
 
-const adminApi = new Hono<AppEnv>();
+// Re-export the main admin API router
+export { adminApi };
+
+// Create a separate router for the specific endpoints needed by routes.ts
+const adminAuthApi = new Hono<AppEnv>();
 
 // Public endpoints
-adminApi.post('/api/login', adminLogin);
-adminApi.get('/api/status', adminStatus);
+adminAuthApi.post('/api/login', handleAdminLogin);
+adminAuthApi.get('/api/status', handleAdminStatus);
 
 // Protected endpoints
-adminApi.post('/api/logout', requireAdminAuth, adminLogout);
+adminAuthApi.post('/api/logout', requireAdminAuth, handleAdminLogout);
 
-adminApi.get('/api/stats', requireAdminAuth, async (c) => {
+adminAuthApi.get('/api/stats', requireAdminAuth, async (c) => {
   const db = c.env.DB;
   
   try {
@@ -39,7 +44,7 @@ adminApi.get('/api/stats', requireAdminAuth, async (c) => {
 });
 
 // User management endpoints
-adminApi.get('/api/users', requireAdminAuth, async (c) => {
+adminAuthApi.get('/api/users', requireAdminAuth, async (c) => {
   const db = c.env.DB;
   const users = await db.prepare(
     `SELECT user_id, display_name, admin, is_deactivated, created_at 
@@ -48,7 +53,7 @@ adminApi.get('/api/users', requireAdminAuth, async (c) => {
   return c.json({ users: users.results });
 });
 
-adminApi.post('/api/users', requireAdminAuth, async (c) => {
+adminAuthApi.post('/api/users', requireAdminAuth, async (c) => {
   const db = c.env.DB;
   const { username, password, admin } = await c.req.json();
   
@@ -81,4 +86,4 @@ adminApi.post('/api/users', requireAdminAuth, async (c) => {
   }
 });
 
-export default adminApi;
+export default adminAuthApi;

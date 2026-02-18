@@ -26,6 +26,28 @@ import { requireAuth, extractAccessToken } from '../middleware/auth';
 
 const app = new Hono<AppEnv>();
 
+// ============================================
+// Helper function to check registration status
+// ============================================
+
+/**
+ * Check if registration is enabled via server_config
+ * Defaults to false (disabled) for safety
+ */
+async function isRegistrationEnabled(env: AppEnv['Bindings']): Promise<boolean> {
+  try {
+    const config = await env.DB.prepare(
+      `SELECT value FROM server_config WHERE key = 'registration_enabled'`
+    ).first<{ value: string }>();
+    
+    // Default to false if not set (safest default for disabled)
+    return config?.value === 'true';
+  } catch (error) {
+    console.error('Error checking registration status:', error);
+    return false; // If error, default to disabled
+  }
+}
+
 // GET /_matrix/client/v3/login - Get supported login flows
 app.get('/_matrix/client/v3/login', (c) => {
   return c.json({
@@ -298,8 +320,23 @@ app.get('/_matrix/client/v3/register/available', async (c) => {
   return c.json({ available: true });
 });
 
-// POST /_matrix/client/v3/register - Register new user
+// ============================================
+// REGISTRATION DISABLED - For pre-release
+// ============================================
+
+// POST /_matrix/client/v3/register - Register new user (DISABLED)
 app.post('/_matrix/client/v3/register', async (c) => {
+  // Check if registration is enabled via server config
+  const registrationEnabled = await isRegistrationEnabled(c.env);
+  
+  if (!registrationEnabled) {
+    // Return a Matrix-compliant error response
+    return c.json({
+      errcode: 'M_FORBIDDEN',
+      error: 'Registration is currently disabled on this server. Please contact the server administrator.'
+    }, 403);
+  }
+
   let body: any;
   try {
     body = await c.req.json();

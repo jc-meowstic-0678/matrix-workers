@@ -43,7 +43,7 @@ import oidcAuth from './api/oidc-auth';
 import oauth from './api/oauth';
 
 // NEW: Import admin dashboard and API routes
-import { adminDashboardHtml } from './admin/dashboard';
+import { adminDashboardHtml } from './admin/ui/dashboard.html';
 import adminApi from './admin/routes';
 
 import { rateLimitMiddleware } from './middleware/rate-limit';

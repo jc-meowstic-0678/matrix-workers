@@ -40,6 +40,63 @@ async function invalidateStatsCache(env: import('../types').Env) {
   await adminDO.fetch('http://internal/invalidate-cache');
 }
 
+// ============================================
+// Registration Toggle Endpoints (NEW)
+// ============================================
+
+// GET /admin/api/registration - Get registration status
+app.get('/admin/api/registration', requireAuth(), requireAdmin, async (c) => {
+  const db = c.env.DB;
+  
+  try {
+    const config = await db.prepare(
+      `SELECT value FROM server_config WHERE key = 'registration_enabled'`
+    ).first<{ value: string }>();
+    
+    return c.json({
+      enabled: config?.value === 'true'
+    });
+  } catch (error) {
+    console.error('Failed to fetch registration status:', error);
+    return c.json({ error: 'Failed to fetch registration status' }, 500);
+  }
+});
+
+// PUT /admin/api/registration - Toggle registration
+app.put('/admin/api/registration', requireAuth(), requireAdmin, async (c) => {
+  const db = c.env.DB;
+  
+  let body: any;
+  try {
+    body = await c.req.json();
+  } catch {
+    return Errors.badJson().toResponse();
+  }
+
+  const { enabled } = body;
+  if (typeof enabled !== 'boolean') {
+    return Errors.missingParam('enabled (boolean) required').toResponse();
+  }
+
+  try {
+    await db.prepare(`
+      INSERT INTO server_config (key, value, updated_at)
+      VALUES ('registration_enabled', ?, ?)
+      ON CONFLICT (key) DO UPDATE SET
+        value = excluded.value,
+        updated_at = excluded.updated_at
+    `).bind(enabled ? 'true' : 'false', Date.now()).run();
+
+    // Invalidate stats cache as registration status affects stats
+    await invalidateStatsCache(c.env);
+
+    return c.json({ success: true, enabled });
+  } catch (error) {
+    console.error('Failed to update registration status:', error);
+    return c.json({ error: 'Failed to update registration status' }, 500);
+  }
+});
+
 // GET /admin/api/stats - Server statistics (via AdminDurableObject for caching)
 app.get('/admin/api/stats', requireAuth(), requireAdmin, async (c) => {
   const refresh = c.req.query('refresh') === 'true';
@@ -642,7 +699,7 @@ app.get('/admin/api/config', requireAuth(), requireAdmin, async (c) => {
     server_name: c.env.SERVER_NAME,
     version: c.env.SERVER_VERSION,
     features: {
-      registration: true,
+      registration: true, // This is overridden by the registration toggle
       federation: true,
       media_upload: true,
       voip: true,
@@ -1275,8 +1332,14 @@ app.post('/admin/api/server-notice', requireAuth(), requireAdmin, async (c) => {
   return c.json({ success: true, devices_notified: devices.results.length });
 });
 
-// GET /admin/api/registration - Get registration status (via AdminDurableObject)
-app.get('/admin/api/registration', requireAuth(), requireAdmin, async (c) => {
+// ============================================
+// NOTE: The original registration endpoints using AdminDurableObject
+// are preserved below. The new endpoints above (GET/PUT /admin/api/registration)
+// provide a direct database-based alternative that doesn't require the AdminDO.
+// ============================================
+
+// GET /admin/api/registration (via AdminDurableObject) - kept for backward compatibility
+app.get('/admin/api/registration/do', requireAuth(), requireAdmin, async (c) => {
   const adminDO = getAdminDO(c.env);
   const response = await adminDO.fetch('http://internal/config');
   const config = await response.json() as { registration_enabled: boolean };
@@ -1286,8 +1349,8 @@ app.get('/admin/api/registration', requireAuth(), requireAdmin, async (c) => {
   });
 });
 
-// PUT /admin/api/registration - Toggle registration (via AdminDurableObject)
-app.put('/admin/api/registration', requireAuth(), requireAdmin, async (c) => {
+// PUT /admin/api/registration (via AdminDurableObject) - kept for backward compatibility
+app.put('/admin/api/registration/do', requireAuth(), requireAdmin, async (c) => {
   let body: any;
   try {
     body = await c.req.json();
