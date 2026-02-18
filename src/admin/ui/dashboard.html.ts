@@ -804,13 +804,14 @@ function getSecurityStyles() { return securityStyles; }
 function getSettingsStyles() { return settingsStyles; }
 function getNotificationStyles() { return notificationStyles; }
 
+// Helper functions to get view-specific JavaScript (use imported constants)
 function getApiClient() { return createApiClient; }
 function getViewState() { return viewState; }
 function getViewSwitcher() { return viewSwitcher; }
-function getUserFunctions() { return userFunctions; }
-function getRoomFunctions() { return roomFunctions; }
-function getMediaFunctions() { return mediaFunctions; }
-function getReportFunctions() { return reportFunctions; }
+function getUserFunctions() { return usersFunctions; }       // ✅ plural, from import
+function getRoomFunctions() { return roomsFunctions; }       // ✅ plural
+function getMediaFunctions() { return mediaFunctions; }      // ✅ plural
+function getReportFunctions() { return reportsFunctions; }   // ✅ plural
 function getFederationFunctions() { return federationFunctions; }
 function getSecurityFunctions() { return securityFunctions; }
 function getSettingsFunctions() { return settingsFunctions; }
