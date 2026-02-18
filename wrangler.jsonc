@@ -141,5 +141,29 @@
       "binding": "PUSH_NOTIFICATION_WORKFLOW",
       "class_name": "PushNotificationWorkflow"
     }
+  ],
+
+  // For analytics (optional)
+ "analytics_engine_datasets": [
+  {
+    "binding": "ANALYTICS",
+    "dataset": "matrix_requests"
+  }
+],
+
+ "queues": {
+  "producers": [
+    {
+      "binding": "FEDERATION_QUEUE",
+      "queue": "federation-outbound"
+    }
+  ],
+  "consumers": [
+    {
+      "queue": "federation-outbound",
+      "max_retries": 5,
+      "dead_letter_queue": "federation-dlq"
+    }
   ]
+}
 }

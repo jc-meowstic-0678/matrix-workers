@@ -56,6 +56,8 @@ export { RoomDurableObject, SyncDurableObject, FederationDurableObject, CallRoom
 // Import Workflows
 export { RoomJoinWorkflow, PushNotificationWorkflow, FederationCatchupWorkflow, MediaCleanupWorkflow, StateCompactionWorkflow } from './workflows';
 
+export { handleFederationQueue } from './consumers/federation-consumer';
+
 // Create the main app
 const app = new Hono<AppEnv>();
 
