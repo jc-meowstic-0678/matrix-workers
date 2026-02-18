@@ -412,3 +412,73 @@ app.onError((err, c) => {
 });
 
 export default app;
+
+// src/index.ts - Add this at the end of the file
+
+// ============================================
+// Queue Consumer for Federation
+// ============================================
+
+/**
+ * Handles messages from the federation-outbound queue
+ * Processes batches of federation messages to remote servers
+ */
+export async function queue(batch: MessageBatch, env: Env, ctx: ExecutionContext) {
+  console.log(`[queue] Processing batch of ${batch.messages.length} messages from queue: ${batch.queue}`);
+  
+  // Group messages by destination for efficiency
+  const byDestination = new Map<string, any[]>();
+  
+  for (const message of batch.messages) {
+    const { destination } = message.body;
+    if (!byDestination.has(destination)) {
+      byDestination.set(destination, []);
+    }
+    byDestination.get(destination)!.push(message);
+  }
+  
+  // Process each destination's messages
+  const results = await Promise.allSettled(
+    Array.from(byDestination.entries()).map(async ([destination, messages]) => {
+      try {
+        // Import the federation consumer handler
+        const { handleFederationQueue } = await import('./consumers/federation-consumer');
+        
+        // Create a synthetic batch for this destination
+        const destinationBatch = {
+          messages: messages.map(m => ({
+            ...m,
+            retry: (options?: any) => m.retry(options)
+          }))
+        };
+        
+        await handleFederationQueue(destinationBatch as any, env);
+        
+        // Ack all messages for this destination on success
+        messages.forEach(m => m.ack());
+        
+      } catch (error) {
+        console.error(`[queue] Failed to process messages for ${destination}:`, error);
+        
+        // Retry messages with exponential backoff
+        for (const message of messages) {
+          if (message.attempts < 5) {
+            // Retry with delay: 60s, 120s, 240s, 480s, 960s
+            const delaySeconds = Math.pow(2, message.attempts) * 60;
+            message.retry({ delaySeconds });
+          } else {
+            // Max retries exceeded, log and acknowledge to prevent blocking
+            console.error(`[queue] Max retries exceeded for message ${message.id} to ${destination}`);
+            message.ack();
+          }
+        }
+      }
+    })
+  );
+  
+  // Log summary
+  const succeeded = results.filter(r => r.status === 'fulfilled').length;
+  const failed = results.filter(r => r.status === 'rejected').length;
+  
+  console.log(`[queue] Batch processing complete: ${succeeded} destinations succeeded, ${failed} failed`);
+}
