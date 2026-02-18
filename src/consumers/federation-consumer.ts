@@ -1,5 +1,5 @@
-// Federation Queue Consumer
-// Processes outbound federation transactions via Cloudflare Queues
+// src/consumers/federation-consumer.ts
+// Update to handle MessageBatch interface
 
 import type { Env } from '../types';
 import { signJson } from '../utils/crypto';
@@ -17,7 +17,7 @@ interface FederationBatch {
 }
 
 export async function handleFederationQueue(
-  batch: MessageBatch<FederationQueueMessage>,
+  batch: { messages: Array<{ body: FederationQueueMessage; attempts: number; retry: (options?: any) => void; ack: () => void }> },
   env: Env
 ): Promise<void> {
   // Group messages by destination
@@ -40,26 +40,33 @@ export async function handleFederationQueue(
     })
   );
 
-  // Retry failed messages
-  for (let i = 0; i < batch.messages.length; i++) {
-    const msg = batch.messages[i];
-    const destination = msg.body.destination;
-
-    // Check if this destination's send succeeded
-    const entries = Array.from(byDestination.keys());
-    const destIndex = entries.indexOf(destination);
-    const result = results[destIndex];
-
-    if (result.status === 'rejected' || (result.status === 'fulfilled' && !result.value)) {
-      // Retry with exponential backoff
-      if (msg.attempts < 5) {
-        msg.retry({ delaySeconds: Math.pow(2, msg.attempts) * 60 });
-      } else {
-        // Give up after 5 attempts - message goes to DLQ if configured
-        msg.ack();
-      }
+  // Handle results for each destination
+  let index = 0;
+  for (const [destination, data] of byDestination.entries()) {
+    const result = results[index++];
+    
+    // Find all messages for this destination
+    const destinationMessages = batch.messages.filter(m => m.body.destination === destination);
+    
+    if (result.status === 'fulfilled' && result.value) {
+      // Success - acknowledge all messages for this destination
+      destinationMessages.forEach(m => m.ack());
+      console.log(`[federation-consumer] Successfully sent to ${destination}`);
     } else {
-      msg.ack();
+      // Failure - retry with exponential backoff
+      console.error(`[federation-consumer] Failed to send to ${destination}`);
+      
+      for (const message of destinationMessages) {
+        if (message.attempts < 5) {
+          // Retry with exponential backoff: 1min, 2min, 4min, 8min, 16min
+          const delaySeconds = Math.pow(2, message.attempts) * 60;
+          message.retry({ delaySeconds });
+        } else {
+          // Give up after 5 attempts
+          console.error(`[federation-consumer] Max retries exceeded for ${destination}, message ${message.body.pdu?.event_id || 'EDU'}`);
+          message.ack(); // Acknowledge to remove from queue
+        }
+      }
     }
   }
 }
