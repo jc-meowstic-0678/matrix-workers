@@ -6,10 +6,11 @@
 import { DurableObject } from 'cloudflare:workers';
 import type { Env } from '../types';
 
+// Define strict types instead of 'any'
 interface CrossSigningKeys {
-  master?: any;
-  self_signing?: any;
-  user_signing?: any;
+  master?: Record<string, string>;
+  self_signing?: Record<string, string>;
+  user_signing?: Record<string, string>;
 }
 
 interface DeviceSignature {
@@ -21,6 +22,7 @@ interface DeviceSignature {
 }
 
 export class UserKeysDurableObject extends DurableObject<Env> {
+  // Ensure the constructor is typed correctly
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
   }
