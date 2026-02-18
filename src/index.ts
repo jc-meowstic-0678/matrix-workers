@@ -42,7 +42,7 @@ import identity from './api/identity';
 import oidcAuth from './api/oidc-auth';
 import oauth from './api/oauth';
 
-// NEW: Import admin dashboard and API routes
+// Import admin dashboard and API routes
 import { adminDashboardHtml } from './admin/ui/dashboard.html.js';
 import adminApi from './admin/routes';
 
@@ -51,18 +51,36 @@ import { requireAuth } from './middleware/auth';
 import { analyticsMiddleware } from './middleware/analytics';
 
 // Import Durable Objects
-export { RoomDurableObject, SyncDurableObject, FederationDurableObject, CallRoomDurableObject, AdminDurableObject, UserKeysDurableObject, PushDurableObject, RateLimitDurableObject, RoomNotificationQueue } from './durable-objects';
+export { 
+  RoomDurableObject, 
+  SyncDurableObject, 
+  FederationDurableObject, 
+  CallRoomDurableObject, 
+  AdminDurableObject, 
+  UserKeysDurableObject, 
+  PushDurableObject, 
+  RateLimitDurableObject,
+  RoomNotificationQueue
+} from './durable-objects';
 
 // Import Workflows
-export { RoomJoinWorkflow, PushNotificationWorkflow, FederationCatchupWorkflow, MediaCleanupWorkflow, StateCompactionWorkflow } from './workflows';
+export { 
+  RoomJoinWorkflow, 
+  PushNotificationWorkflow, 
+  FederationCatchupWorkflow, 
+  MediaCleanupWorkflow, 
+  StateCompactionWorkflow 
+} from './workflows';
 
-export { handleFederationQueue } from './consumers/federation-consumer';
+// Import Queue handler helper (optional - can be removed if not needed)
 import { sendFederationTransaction } from './consumers/federation-consumer';
 
 // Create the main app
 const app = new Hono<AppEnv>();
 
-// CORS for Matrix clients - MUST BE FIRST to ensure headers are always sent
+// ============================================
+// CORS and Middleware
+// ============================================
 app.use('*', cors({
   origin: '*',
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -71,47 +89,36 @@ app.use('*', cors({
   maxAge: 86400,
 }));
 
-// Global middleware
 app.use('*', logger());
 app.use('*', analyticsMiddleware());
-
-// Rate limiting for Matrix API endpoints
 app.use('/_matrix/*', rateLimitMiddleware);
 
 // Health check
 app.get('/health', (c) => c.json({ status: 'ok', server: 'matrix-worker' }));
 
 // ============================================
-// Admin Routes (with authentication)
+// Admin Routes
 // ============================================
-
-// Mount admin API routes FIRST (before the HTML route to ensure proper routing)
 app.route('/admin', adminApi);
 
-// Admin dashboard HTML - check authentication status before rendering
 app.get('/admin', async (c) => {
   const adminToken = await c.env.CACHE.get('admin:session');
   const isAuthenticated = !!adminToken;
-  
   const html = adminDashboardHtml(c.env.SERVER_NAME, isAuthenticated);
   return c.html(html, 200, {
-    'Content-Security-Policy':
-      "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'",
+    'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'",
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
   });
 });
 
-// Handle trailing slash
 app.get('/admin/', async (c) => {
   const adminToken = await c.env.CACHE.get('admin:session');
   const isAuthenticated = !!adminToken;
-  
   const html = adminDashboardHtml(c.env.SERVER_NAME, isAuthenticated);
   return c.html(html, 200, {
-    'Content-Security-Policy':
-      "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'",
+    'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'",
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
@@ -121,23 +128,10 @@ app.get('/admin/', async (c) => {
 // ============================================
 // Matrix API Routes
 // ============================================
-
-// Admin API routes (legacy - keep for backward compatibility)
-app.route('/', admin);
-
-// QR code login landing page - commented out, requires MSC4108/OIDC for Element X
-// app.route('/', qrLogin);
-
-// OIDC/SSO authentication
+app.route('/', admin); // Legacy admin routes
 app.route('/', oidcAuth);
-
-// OAuth 2.0 provider endpoints
 app.route('/', oauth);
-
-// Matrix version discovery
 app.route('/', versions);
-
-// Client-Server API
 app.route('/', login);
 app.route('/', rooms);
 app.route('/', sync);
@@ -161,64 +155,35 @@ app.route('/', spaces);
 app.route('/', account);
 app.route('/', serverNotices);
 app.route('/', report);
-
-// Cloudflare Calls-based video calling API
 app.route('/', calls);
-
-// MatrixRTC (LiveKit) JWT service for Element X calls
 app.route('/', rtc);
-
-// Application Service API
 app.route('/', appservice);
-
-// Identity Service API
 app.route('/', identity);
-
-// Server-Server (Federation) API
 app.route('/', federation);
 
 // ============================================
 // Additional Matrix Endpoints
 // ============================================
-
-// Capabilities endpoint
 app.get('/_matrix/client/v3/capabilities', (c) => {
   return c.json({
     capabilities: {
-      'm.change_password': {
-        enabled: true,
-      },
+      'm.change_password': { enabled: true },
       'm.room_versions': {
         default: '10',
         available: {
-          '1': 'stable',
-          '2': 'stable',
-          '3': 'stable',
-          '4': 'stable',
-          '5': 'stable',
-          '6': 'stable',
-          '7': 'stable',
-          '8': 'stable',
-          '9': 'stable',
-          '10': 'stable',
-          '11': 'stable',
-          '12': 'stable',
-        },
+          '1': 'stable', '2': 'stable', '3': 'stable', '4': 'stable',
+          '5': 'stable', '6': 'stable', '7': 'stable', '8': 'stable',
+          '9': 'stable', '10': 'stable', '11': 'stable', '12': 'stable'
+        }
       },
-      'm.set_displayname': {
-        enabled: true,
-      },
-      'm.set_avatar_url': {
-        enabled: true,
-      },
-      'm.3pid_changes': {
-        enabled: true,
-      },
-    },
+      'm.set_displayname': { enabled: true },
+      'm.set_avatar_url': { enabled: true },
+      'm.3pid_changes': { enabled: true }
+    }
   });
 });
 
-// Filter endpoints - persist filters in KV for sync optimization
+// Filter endpoints
 app.post('/_matrix/client/v3/user/:userId/filter', requireAuth(), async (c) => {
   const userId = c.get('userId');
   const requestedUserId = c.req.param('userId');
@@ -265,9 +230,6 @@ app.get('/_matrix/client/v3/user/:userId/filter/:filterId', requireAuth(), async
     return c.json({});
   }
 });
-
-// Search endpoint
-app.route('/', search);
 
 // Public rooms directory
 app.get('/_matrix/client/v3/publicRooms', async (c) => {
@@ -316,10 +278,7 @@ app.get('/_matrix/client/v3/publicRooms', async (c) => {
 });
 
 app.post('/_matrix/client/v3/publicRooms', async (c) => {
-  return c.json({
-    chunk: [],
-    total_room_count_estimate: 0,
-  });
+  return c.json({ chunk: [], total_room_count_estimate: 0 });
 });
 
 // User directory search
@@ -352,11 +311,7 @@ app.post('/_matrix/client/v3/user_directory/search', requireAuth(), async (c) =>
       AND u.user_id != ?
     ORDER BY bm25(users_fts)
     LIMIT ?
-  `).bind(ftsSearchTerm, requestingUserId, limit + 1).all<{
-    user_id: string;
-    display_name: string | null;
-    avatar_url: string | null;
-  }>();
+  `).bind(ftsSearchTerm, requestingUserId, limit + 1).all();
 
   const limited = results.results.length > limit;
   const users = results.results.slice(0, limit).map(u => ({
@@ -375,10 +330,7 @@ app.get('/_matrix/client/v3/thirdparty/protocols', async (c) => {
 
 // Dehydrated device (MSC3814 - stub)
 app.get('/_matrix/client/unstable/org.matrix.msc3814.v1/dehydrated_device', async (c) => {
-  return c.json({
-    errcode: 'M_NOT_FOUND',
-    error: 'No dehydrated device found',
-  }, 404);
+  return c.json({ errcode: 'M_NOT_FOUND', error: 'No dehydrated device found' }, 404);
 });
 
 // OIDC auth metadata endpoints (legacy redirects)
@@ -392,10 +344,7 @@ app.get('/_matrix/client/unstable/org.matrix.msc2965/auth_metadata', async (c) =
 
 // Fallback for unknown endpoints
 app.all('/_matrix/*', (c) => {
-  return c.json({
-    errcode: 'M_UNRECOGNIZED',
-    error: 'Unrecognized request',
-  }, 404);
+  return c.json({ errcode: 'M_UNRECOGNIZED', error: 'Unrecognized request' }, 404);
 });
 
 // 404 handler
@@ -406,19 +355,20 @@ app.notFound((c) => {
 // Error handler
 app.onError((err, c) => {
   console.error('Unhandled error:', err);
-  return c.json({
-    errcode: 'M_UNKNOWN',
-    error: 'An internal error occurred',
-  }, 500);
+  return c.json({ errcode: 'M_UNKNOWN', error: 'An internal error occurred' }, 500);
 });
 
-export default app;
-
-// src/index.ts - Add this at the end of the file, after your existing exports
-
 // ============================================
-// Queue Consumer for Federation (REQUIRED)
+// QUEUE HANDLER - MUST BE EXPORTED DIRECTLY
 // ============================================
+
+// Define the message type for type safety
+interface FederationQueueMessage {
+  destination: string;
+  pdu?: Record<string, unknown>;
+  edu?: { edu_type: string; content: Record<string, unknown> };
+  timestamp: number;
+}
 
 /**
  * Handles messages from the federation-outbound queue
@@ -449,6 +399,9 @@ export async function queue(batch: MessageBatch<FederationQueueMessage>, env: En
         // Prepare batch for this destination
         const pdus = messages.filter(m => m.pdu).map(m => m.pdu!);
         const edus = messages.filter(m => m.edu).map(m => m.edu!);
+        
+        // Import helper function
+        const { sendFederationTransaction } = await import('./consumers/federation-consumer');
         
         // Send to remote server
         const success = await sendFederationTransaction(env, destination, { pdus, edus });
@@ -492,4 +445,11 @@ export async function queue(batch: MessageBatch<FederationQueueMessage>, env: En
   
   console.log(`[queue] Batch processing complete: ${succeeded} destinations succeeded, ${failed} destinations queued for retry`);
 }
-export { queue };  
+
+// ============================================
+// DO NOT ADD ANOTHER "export { queue }" HERE!
+// The function above is already exported
+// ============================================
+
+// The default export is your Hono app
+export default app;
