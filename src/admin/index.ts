@@ -11,7 +11,7 @@ import { mediaApi } from './api/media';
 import { reportsApi } from './api/reports';
 import { securityApi } from './api/security';
 import { settingsApi } from './api/settings';
-import { adminDashboardHtml } from './ui/dashboard.html';
+import { adminDashboardHtml } from './ui/dashboard.html.js';
 
 // Create admin API router
 export const adminApi = new Hono<AppEnv>();
