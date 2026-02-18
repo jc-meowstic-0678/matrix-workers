@@ -15,19 +15,3 @@ UPDATE server_keys SET key_version = 1 WHERE key_version IS NULL;
 
 -- Create index for faster lookups
 CREATE INDEX IF NOT EXISTS idx_server_keys_version ON server_keys(key_version);
-
--- Add table for caching remote server keys (for federation auth)
-CREATE TABLE IF NOT EXISTS remote_server_keys (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    server_name TEXT NOT NULL,
-    key_id TEXT NOT NULL,
-    public_key TEXT NOT NULL,
-    valid_from INTEGER NOT NULL,
-    valid_until INTEGER,
-    fetched_at INTEGER NOT NULL,
-    verified INTEGER DEFAULT 0,
-    UNIQUE(server_name, key_id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_remote_server_keys_server ON remote_server_keys(server_name);
-CREATE INDEX IF NOT EXISTS idx_remote_server_keys_valid ON remote_server_keys(valid_until);

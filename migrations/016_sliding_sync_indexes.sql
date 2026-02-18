@@ -76,8 +76,5 @@ CREATE INDEX IF NOT EXISTS idx_account_data_user_direct
 ON account_data(user_id, event_type) 
 WHERE event_type = 'm.direct';
 
-CREATE INDEX IF NOT EXISTS idx_rooms_type 
-ON rooms(type);
-
 -- Add encrypted column if not exists
 ALTER TABLE rooms ADD COLUMN encrypted INTEGER DEFAULT 0;

@@ -12,6 +12,7 @@ CREATE VIRTUAL TABLE IF NOT EXISTS events_fts USING fts5(
 );
 
 -- Trigger to keep FTS index in sync on insert
+DROP TRIGGER IF EXISTS events_fts_insert;
 CREATE TRIGGER IF NOT EXISTS events_fts_insert AFTER INSERT ON events
 WHEN NEW.event_type = 'm.room.message'
 BEGIN
@@ -21,6 +22,7 @@ BEGIN
 END;
 
 -- Trigger to handle deletes
+DROP TRIGGER IF EXISTS events_fts_delete;
 CREATE TRIGGER IF NOT EXISTS events_fts_delete AFTER DELETE ON events
 WHEN OLD.event_type = 'm.room.message'
 BEGIN
@@ -39,12 +41,14 @@ CREATE VIRTUAL TABLE IF NOT EXISTS users_fts USING fts5(
 );
 
 -- Trigger to keep user FTS in sync
+DROP TRIGGER IF EXISTS users_fts_insert;
 CREATE TRIGGER IF NOT EXISTS users_fts_insert AFTER INSERT ON users
 BEGIN
     INSERT INTO users_fts(rowid, user_id, localpart, display_name)
     VALUES (NEW.rowid, NEW.user_id, NEW.localpart, NEW.display_name);
 END;
 
+DROP TRIGGER IF EXISTS users_fts_update;
 CREATE TRIGGER IF NOT EXISTS users_fts_update AFTER UPDATE ON users
 BEGIN
     INSERT INTO users_fts(users_fts, rowid, user_id, localpart, display_name)
@@ -53,6 +57,7 @@ BEGIN
     VALUES (NEW.rowid, NEW.user_id, NEW.localpart, NEW.display_name);
 END;
 
+DROP TRIGGER IF EXISTS users_fts_delete;
 CREATE TRIGGER IF NOT EXISTS users_fts_delete AFTER DELETE ON users
 BEGIN
     INSERT INTO users_fts(users_fts, rowid, user_id, localpart, display_name)
