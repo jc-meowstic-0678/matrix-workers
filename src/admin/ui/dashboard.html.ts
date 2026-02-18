@@ -45,7 +45,9 @@ import {
   settingsFunctions 
 } from './views/settings';
 
-export const adminDashboardHtml = (serverName: string, isAuthenticated: boolean = false): string => `
+// Define the main export function
+export const adminDashboardHtml = (serverName: string, isAuthenticated: boolean = false): string => {
+  return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -717,15 +719,15 @@ export const adminDashboardHtml = (serverName: string, isAuthenticated: boolean 
     }
 
     /* Import all view styles */
-    ${dashboardStyles}
-    ${usersStyles}
-    ${roomsStyles}
-    ${federationStyles}
-    ${mediaStyles}
-    ${reportsStyles}
-    ${securityStyles}
-    ${settingsStyles}
-    ${notificationStyles}
+    ${getDashboardStyles()}
+    ${getUsersStyles()}
+    ${getRoomsStyles()}
+    ${getFederationStyles()}
+    ${getMediaStyles()}
+    ${getReportsStyles()}
+    ${getSecurityStyles()}
+    ${getSettingsStyles()}
+    ${getNotificationStyles()}
   </style>
 </head>
 <body>
@@ -752,115 +754,72 @@ export const adminDashboardHtml = (serverName: string, isAuthenticated: boolean 
     // ============================================
     // API Client
     // ============================================
-    ${createApiClient()}
+    ${getApiClient()}
 
     // ============================================
     // View State Management
     // ============================================
-    ${viewState()}
+    ${getViewState()}
 
     // ============================================
     // View Switching
     // ============================================
-    ${viewSwitcher()}
+    ${getViewSwitcher()}
 
     // ============================================
     // View-specific Functions
     // ============================================
-    ${userFunctions()}
-    ${roomFunctions()}
-    ${mediaFunctions()}
-    ${reportFunctions()}
-    ${federationFunctions()}
-    ${securityFunctions()}
-    ${settingsFunctions()}
-    ${dashboardFunctions()}
+    ${getUserFunctions()}
+    ${getRoomFunctions()}
+    ${getMediaFunctions()}
+    ${getReportFunctions()}
+    ${getFederationFunctions()}
+    ${getSecurityFunctions()}
+    ${getSettingsFunctions()}
+    ${getDashboardFunctions()}
 
     // ============================================
     // Notification Helper
     // ============================================
-    ${notificationHelper()}
+    ${getNotificationHelper()}
 
     // ============================================
     // Initialization
     // ============================================
-    ${initialization()}
+    ${getInitialization()}
   </script>
 </body>
 </html>
-`;
+  `;
+};
 
-// View-specific styles (imported from their respective files)
-const dashboardStyles = dashboardView.styles || '';
-const usersStyles = usersView.styles || '';
-const roomsStyles = roomsView.styles || '';
-const federationStyles = federationView.styles || '';
-const mediaStyles = mediaView.styles || '';
-const reportsStyles = reportsView.styles || '';
-const securityStyles = securityView.styles || '';
-const settingsStyles = settingsView.styles || '';
-const notificationStyles = `
-  .notification {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 16px 24px;
-    background: var(--bg-surface);
-    border: 1px solid var(--border-default);
-    border-radius: 8px;
-    box-shadow: var(--shadow-lg);
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    z-index: 2000;
-    animation: slideIn 0.3s ease;
-    max-width: 400px;
-  }
-  
-  .notification.success {
-    border-left: 4px solid var(--accent-green);
-  }
-  
-  .notification.error {
-    border-left: 4px solid var(--accent-red);
-  }
-  
-  .notification.info {
-    border-left: 4px solid var(--accent-blue);
-  }
-  
-  .notification-message {
-    flex: 1;
-    font-size: 14px;
-  }
-  
-  .notification-close {
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    cursor: pointer;
-    font-size: 16px;
-    padding: 0 4px;
-  }
-  
-  .notification-close:hover {
-    color: var(--text-primary);
-  }
-  
-  @keyframes slideIn {
-    from {
-      transform: translateX(100%);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
-`;
+// Helper functions to get styles (to avoid template literal issues)
+function getDashboardStyles() { return dashboardStyles; }
+function getUsersStyles() { return usersStyles; }
+function getRoomsStyles() { return roomsStyles; }
+function getFederationStyles() { return federationStyles; }
+function getMediaStyles() { return mediaStyles; }
+function getReportsStyles() { return reportsStyles; }
+function getSecurityStyles() { return securityStyles; }
+function getSettingsStyles() { return settingsStyles; }
+function getNotificationStyles() { return notificationStyles; }
 
-// View-specific functions (imported from their respective files)
-const createApiClient = (): string => `
+function getApiClient() { return createApiClient; }
+function getViewState() { return viewState; }
+function getViewSwitcher() { return viewSwitcher; }
+function getUserFunctions() { return userFunctions; }
+function getRoomFunctions() { return roomFunctions; }
+function getMediaFunctions() { return mediaFunctions; }
+function getReportFunctions() { return reportFunctions; }
+function getFederationFunctions() { return federationFunctions; }
+function getSecurityFunctions() { return securityFunctions; }
+function getSettingsFunctions() { return settingsFunctions; }
+function getDashboardFunctions() { return dashboardFunctions; }
+function getNotificationHelper() { return notificationHelper; }
+function getInitialization() { return initialization; }
+
+// Define all the helper functions that were previously inline
+const createApiClient = `
   const api = {
     async login(password) {
       const response = await fetch('/admin/api/login', {
@@ -937,7 +896,7 @@ const createApiClient = (): string => `
   };
 `;
 
-const viewState = (): string => `
+const viewState = `
   let currentPage = { users: 0, rooms: 0, media: 0 };
   let searchTimeout;
   let currentUsers = [];
@@ -978,7 +937,7 @@ const viewState = (): string => `
   }
 `;
 
-const viewSwitcher = (): string => `
+const viewSwitcher = `
   function switchView(viewName) {
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
     document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
@@ -1018,7 +977,7 @@ const viewSwitcher = (): string => `
   });
 `;
 
-const notificationHelper = (): string => `
+const notificationHelper = `
   let notificationTimeout;
   
   function showNotification(message, type = 'info') {
@@ -1044,7 +1003,7 @@ const notificationHelper = (): string => `
   }
 `;
 
-const initialization = (): string => `
+const initialization = `
   (async () => {
     const status = await api.checkAuth();
     if (status.authenticated) {
@@ -1055,12 +1014,63 @@ const initialization = (): string => `
   })();
 `;
 
-// Import all view functions
-const userFunctions = usersView.functions || '';
-const roomFunctions = roomsView.functions || '';
-const mediaFunctions = mediaView.functions || '';
-const reportFunctions = reportsView.functions || '';
-const federationFunctions = federationView.functions || '';
-const securityFunctions = securityView.functions || '';
-const settingsFunctions = settingsView.functions || '';
-const dashboardFunctions = dashboardView.functions || '';
+// Notification styles
+const notificationStyles = `
+  .notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 16px 24px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    z-index: 2000;
+    animation: slideIn 0.3s ease;
+    max-width: 400px;
+  }
+  
+  .notification.success {
+    border-left: 4px solid var(--accent-green);
+  }
+  
+  .notification.error {
+    border-left: 4px solid var(--accent-red);
+  }
+  
+  .notification.info {
+    border-left: 4px solid var(--accent-blue);
+  }
+  
+  .notification-message {
+    flex: 1;
+    font-size: 14px;
+  }
+  
+  .notification-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0 4px;
+  }
+  
+  .notification-close:hover {
+    color: var(--text-primary);
+  }
+  
+  @keyframes slideIn {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+`;
