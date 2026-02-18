@@ -63,8 +63,8 @@ export class StreamingSlidingSyncHandler {
   private readonly MAX_CHUNK_SIZE = 100 * 1024; // 100KB max per chunk
   private readonly STREAM_TIMEOUT = 60000; // 60 seconds
 
-  constructor(env: Env) {
-    this.syncHandler = new OptimizedSlidingSyncHandler(env);
+constructor(env: Env, syncHandler?: OptimizedSlidingSyncHandler) {
+    this.syncHandler = syncHandler ?? new OptimizedSlidingSyncHandler(env);
     this.cache = new CachedSlidingSyncHandler(env);
     this.precomputed = new PrecomputedListManager(env);
     this.monitor = new SlidingSyncMonitor(env);
@@ -75,7 +75,8 @@ export class StreamingSlidingSyncHandler {
    */
   async handleSlidingSyncStreaming(
     request: Request,
-    userId: string
+    userId: string,
+    deviceId: string,
   ): Promise<Response> {
     try {
       // Parse request
@@ -244,19 +245,23 @@ export class StreamingSlidingSyncHandler {
   /**
    * Send initial response chunk
    */
-  private async sendInitialChunk(
-    writer: WritableStreamDefaultWriter,
-    encoder: TextEncoder,
-    since: string | null
-  ): Promise<void> {
-    const chunk: StreamingChunk = {
-      type: 'initial',
-      next_batch: this.generateNextBatch(since),
-      timestamp: Date.now()
-    };
-    
-    await this.sendChunk(writer, encoder, chunk);
-  }
+
+  private async getCurrentStreamPosition(): Promise<number> {
+  const result = await this.syncHandler.db.prepare(
+    `SELECT MAX(stream_ordering) as max_pos FROM events`
+  ).first<{ max_pos: number }>();
+  return result?.max_pos ?? 0;
+}
+
+  private async sendInitialChunk(writer, encoder, since): Promise<void> {
+  const currentPos = await this.getCurrentStreamPosition();
+  const chunk = {
+    type: 'initial',
+    next_batch: `s${currentPos}`,
+    timestamp: Date.now()
+  };
+  await this.sendChunk(writer, encoder, chunk);
+}
 
   /**
    * Send heartbeat to keep connection alive
@@ -281,9 +286,10 @@ export class StreamingSlidingSyncHandler {
     encoder: TextEncoder,
     userId: string
   ): Promise<void> {
+    const currentPos = await this.getCurrentStreamPosition();   // ADD THIS
     const chunk: StreamingChunk = {
       type: 'complete',
-      next_batch: await this.generateNextBatchWithPosition(userId),
+      next_batch: `s${currentPos}`,
       timestamp: Date.now()
     };
     
@@ -539,8 +545,11 @@ export class StreamingSlidingSyncHandler {
 // Factory function for easy instantiation
 // ============================================
 
-export function createStreamingSlidingSyncHandler(env: Env): StreamingSlidingSyncHandler {
-  return new StreamingSlidingSyncHandler(env);
+export function createStreamingSlidingSyncHandler(
+  env: Env,
+  syncHandler?: OptimizedSlidingSyncHandler
+): StreamingSlidingSyncHandler {
+  return new StreamingSlidingSyncHandler(env, syncHandler);
 }
 
 // ============================================

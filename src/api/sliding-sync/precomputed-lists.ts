@@ -227,48 +227,6 @@ export class PrecomputedListManager {
   }
 
   /**
-   * Get DM rooms list
-   */
-  private async getDMList(userId: string): Promise<string[]> {
-    // First get the user's DM room list from account data
-    const dmData = await this.db.prepare(`
-      SELECT content
-      FROM account_data
-      WHERE user_id = ? AND event_type = 'm.direct' AND room_id = ''
-    `).bind(userId).first<{ content: string }>();
-
-    if (dmData?.content) {
-      try {
-        const dmMap = JSON.parse(dmData.content);
-        // Flatten all DM rooms
-        const dmRooms = Object.values(dmMap).flat() as string[];
-        return dmRooms.slice(0, this.MAX_LIST_SIZE);
-      } catch {
-        // Fall through to query-based detection
-      }
-    }
-
-    // Fallback: detect DMs as rooms with exactly 2 members and no name
-    const result = await this.db.prepare(`
-      SELECT rm.room_id
-      FROM room_memberships rm
-      JOIN rooms r ON rm.room_id = r.room_id
-      WHERE rm.user_id = ? 
-        AND rm.membership = 'join'
-        AND r.name IS NULL
-        AND (
-          SELECT COUNT(*) 
-          FROM room_memberships 
-          WHERE room_id = rm.room_id AND membership = 'join'
-        ) = 2
-      ORDER BY rm.created_at DESC
-      LIMIT ?
-    `).bind(userId, this.MAX_LIST_SIZE).all<{ room_id: string }>();
-
-    return result.results?.map(r => r.room_id) || [];
-  }
-
-  /**
    * Get spaces list (rooms where user is a member and room is a space)
    */
   private async getSpacesList(userId: string): Promise<string[]> {
@@ -317,18 +275,16 @@ export class PrecomputedListManager {
     // Add sorting
     query += this.buildSortClause(sort);
 
-    // Add pagination based on since token
+    //Implement Stream Position Pagination
     if (since) {
-      const sinceTimestamp = await this.getSinceTimestamp(since);
-      if (sinceTimestamp) {
-        query += ` AND (
-          SELECT MAX(origin_server_ts) 
-          FROM events 
-          WHERE room_id = rm.room_id
-        ) > ?`;
-        params.push(sinceTimestamp);
-      }
+    let sincePos = 0;
+    const stripped = since.startsWith('s') ? since.slice(1) : since;
+    sincePos = parseInt(stripped, 10) || 0;
+    if (sincePos > 0) {
+      query += ` AND (SELECT MAX(stream_ordering) FROM events WHERE room_id = rm.room_id) > ?`;
+      params.push(sincePos);
     }
+  }
 
     // Add limit
     query += ` LIMIT ?`;
@@ -395,15 +351,20 @@ export class PrecomputedListManager {
     }
 
     if (filters.tags && filters.tags.length > 0) {
-      clauses.push(`EXISTS (
-        SELECT 1 FROM account_data
-        WHERE user_id = ? 
-          AND room_id = r.room_id
-          AND event_type = 'm.tag'
-          AND JSON_EXTRACT(content, '$.tags.${filters.tags[0]}') IS NOT NULL
-      )`);
-      params.push(userId); // Need userId for this
-    }
+    const conditions = filters.tags.map(tag => 
+    `EXISTS (
+      SELECT 1 FROM account_data
+      WHERE user_id = ? 
+        AND room_id = r.room_id
+        AND event_type = 'm.tag'
+        AND json_extract(content, '$.tags.${tag}') IS NOT NULL
+    )`
+  );
+  clauses.push(`(${conditions.join(' OR ')})`);
+  // Push userId once per tag? No, each condition needs its own param.
+  // Better to loop and push params accordingly.
+  filters.tags.forEach(() => params.push(userId));
+}
 
     return clauses.length > 0 ? clauses.join(' AND ') : null;
   }
@@ -434,32 +395,6 @@ export class PrecomputedListManager {
     }
     
     return ''; // Default ordering
-  }
-
-  /**
-   * Convert since token to timestamp
-   */
-  private async getSinceTimestamp(since: string): Promise<number | null> {
-    // Since token could be a timestamp or a stream position
-    // Try parsing as timestamp first
-    const timestamp = parseInt(since);
-    if (!isNaN(timestamp)) {
-      return timestamp;
-    }
-
-    // Could also be a stream position - query the database
-    try {
-      const result = await this.db.prepare(`
-        SELECT origin_server_ts
-        FROM events
-        WHERE stream_ordering = ?
-        LIMIT 1
-      `).bind(since).first<{ origin_server_ts: number }>();
-
-      return result?.origin_server_ts || null;
-    } catch {
-      return null;
-    }
   }
 
   /**
@@ -522,27 +457,3 @@ export class PrecomputedListManager {
 export function createPrecomputedListManager(env: Env): PrecomputedListManager {
   return new PrecomputedListManager(env);
 }
-
-// ============================================
-// Database migration for required indexes
-// ============================================
-
-export const PRECOMPUTED_LISTS_MIGRATION = `
--- Indexes for precomputed lists queries
-CREATE INDEX IF NOT EXISTS idx_room_memberships_user_created 
-ON room_memberships(user_id, created_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_account_data_user_tags 
-ON account_data(user_id, event_type, room_id) 
-WHERE event_type = 'm.tag';
-
-CREATE INDEX IF NOT EXISTS idx_account_data_user_direct 
-ON account_data(user_id, event_type) 
-WHERE event_type = 'm.direct';
-
-CREATE INDEX IF NOT EXISTS idx_rooms_type 
-ON rooms(type);
-
--- Add encrypted column if not exists
-ALTER TABLE rooms ADD COLUMN encrypted INTEGER DEFAULT 0;
-`;

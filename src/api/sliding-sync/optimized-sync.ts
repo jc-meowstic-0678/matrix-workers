@@ -130,13 +130,28 @@ export class OptimizedSlidingSyncHandler {
   /**
    * Main entry point for sliding sync requests
    */
-  async handleSlidingSync(request: Request, userId: string): Promise<Response> {
-    const startTime = Date.now();
-    
+  async handleSlidingSync(request: Request, userId: string, deviceId: string): Promise<Response> {
+    const startTime = Date.now(); //Added
+    const nextPos = await getCurrentStreamPosition(this.db);
+    const nextBatch = `s${nextPos}`;
     try {
       // Parse request
       const body = await this.parseRequestBody(request);
       const { lists = {}, extensions = {}, pos: since } = body;
+
+        // If the request has room_subscriptions, fetch them as a separate “list”
+    if (body.room_subscriptions) {
+    const subRooms = Object.keys(body.room_subscriptions);
+    const subConfig = body.room_subscriptions; // each may have its own timeline_limit etc.
+  // For simplicity, treat all subscriptions as one list with a custom handler.
+  // You can merge them into the list results or return a separate section.
+ }
+
+ if (!deviceId) {
+  console.warn(`No deviceId for user ${userId}, to-device messages will be empty`);
+  // Optionally set deviceId to a default like '' but queries may fail.
+  // Better to skip to-device processing.
+}
       
       // Validate request
       this.validateRequest(body);
@@ -150,14 +165,16 @@ export class OptimizedSlidingSyncHandler {
       );
       
       // Process extensions (to-device, typing, receipts, etc.)
-      const extensionResults = await this.processExtensions(userId, extensions, since);
+      const extensionResults = await this.processExtensions(userId, deviceId, extensions, since);
       
-      // Generate next batch token
-      const nextBatch = await this.generateNextBatch(userId, lists, since);
+    //   // Generate next batch token
+    //   const nextBatch = `s${nextPos}`;
       
-      // Track performance metrics
-      const processingTime = Date.now() - startTime;
-      await this.monitor.trackSyncDuration(userId, processingTime, Object.keys(lists).length);
+    //   // Track performance metrics
+    //   const nextPos = await getCurrentStreamPosition(db);
+    //   const nextBatch = `s${nextPos}`;
+    const processingTime = Date.now() - startTime; //Added
+    this.monitor.trackSyncDuration(userId, processingTime, Object.keys(lists).length);
       
       // Build response
       const response = this.buildResponse(listResults, extensionResults, nextBatch);
@@ -255,15 +272,14 @@ export class OptimizedSlidingSyncHandler {
       if (i + concurrency < listEntries.length) {
         await new Promise(resolve => setTimeout(resolve, 10));
       }
-    }
-    
+    }   
     return results;
   }
 
   /**
    * Process a single sync list
    */
-  private async processList(
+  public async processList(  //was private
     userId: string,
     config: ListConfigWithId,
     since: string | null
@@ -332,24 +348,6 @@ export class OptimizedSlidingSyncHandler {
       query += ` AND membership = 'invite'`;
     } else {
       query += ` AND membership = 'join'`;
-    }
-    
-    // Apply additional filters
-    if (filters?.is_dm !== undefined) {
-      // DM detection requires joining with rooms table
-      query = `
-        SELECT rm.room_id
-        FROM room_memberships rm
-        JOIN rooms r ON rm.room_id = r.room_id
-        WHERE rm.user_id = ? AND rm.membership = 'join'
-      `;
-      
-      if (filters.is_dm) {
-        query += ` AND (
-          SELECT COUNT(*) FROM room_memberships 
-          WHERE room_id = rm.room_id AND membership = 'join'
-        ) = 2 AND r.name IS NULL`;
-      }
     }
     
     const results = await this.pool.executeQuery<{ room_id: string }>(
@@ -506,6 +504,7 @@ export class OptimizedSlidingSyncHandler {
    */
   private async processExtensions(
     userId: string,
+    deviceId: string;
     extensions: ExtensionsRequest,
     since: string | null
   ): Promise<ExtensionsResponse> {
@@ -516,7 +515,7 @@ export class OptimizedSlidingSyncHandler {
     
     if (extensions.to_device?.enabled) {
       promises.push(
-        this.processToDevice(userId, extensions.to_device).then(r => result.to_device = r)
+        this.processToDevice(userId, deviceId, extensions.to_device).then(r => result.to_device = r)
       );
     }
     
@@ -546,37 +545,77 @@ export class OptimizedSlidingSyncHandler {
   /**
    * Process to-device messages extension
    */
-  private async processToDevice(
-    userId: string,
-    config: { since?: string; limit?: number }
-  ): Promise<{ next_batch: string; events: any[] }> {
-    const limit = config.limit || 100;
-    
-    const events = await this.pool.executeQuery(
-      `SELECT * FROM to_device_messages 
-       WHERE recipient_user_id = ? 
-       ORDER BY stream_position ASC
-       LIMIT ?`,
-      [userId, limit],
-      'high'
-    );
-    
-    return {
-      next_batch: Date.now().toString(),
-      events
-    };
+private async processToDevice(
+  userId: string,
+  deviceId: string;
+  config: { since?: string; limit?: number }
+): Promise<{ next_batch: string; events: any[] }> {
+  const limit = config.limit || 100;
+  let sincePos = 0;
+  if (config.since) {
+    const stripped = config.since.startsWith('s') ? config.since.slice(1) : config.since;
+    sincePos = parseInt(stripped, 10) || 0;
   }
+
+  const messages = await this.pool.executeQuery(
+    `SELECT id, sender_user_id, event_type, content, stream_position
+     FROM to_device_messages
+     WHERE recipient_user_id = ?
+       AND recipient_device_id = ?  -- need device ID; will need to pass it
+       AND stream_position > ?
+     ORDER BY stream_position ASC
+     LIMIT ?`,
+    [userId, deviceId, sincePos, limit],
+    'high'
+  );
+
+  // Format messages as Matrix to‑device events
+  const events = messages.map(m => ({
+    sender: m.sender_user_id,
+    type: m.event_type,
+    content: JSON.parse(m.content),
+  }));
+
+  // Get max stream position among returned messages for next_batch
+  const nextPos = messages.length > 0
+    ? Math.max(...messages.map(m => m.stream_position))
+    : await this.getCurrentToDeviceStreamPos(userId);
+  
+  return {
+    next_batch: `s${nextPos}`,
+    events,
+  };
+ }
 
   /**
    * Process E2EE extension (device list changes)
    */
-  private async processE2EE(
-    userId: string,
-    since: string | null
-  ): Promise<{ device_lists?: { changed: string[]; left: string[] } }> {
-    // Implementation would track device list changes
-    return {};
-  }
+private async processE2EE(
+  userId: string,
+  since: string | null
+ ): Promise<{ device_lists?: { changed: string[]; left: string[] } }> {
+  if (!since) return {}; // first sync – client will fetch all keys separately
+
+  const sincePos = parseInt(since.startsWith('s') ? since.slice(1) : since, 10) || 0;
+
+  const changed = await this.pool.executeQuery(
+    `SELECT DISTINCT user_id
+     FROM device_key_changes
+     WHERE stream_position > ?
+       AND (user_id IN (SELECT user_id FROM room_memberships WHERE room_id IN (
+           SELECT room_id FROM room_memberships WHERE user_id = ?
+         )) OR user_id = ?)`,
+    [sincePos, userId, userId],
+    'high'
+  );
+
+  return {
+    device_lists: {
+      changed: changed.map(c => c.user_id),
+      left: [], // can be filled if you track users leaving shared rooms
+    },
+  };
+}
 
   /**
    * Process typing notifications extension
@@ -587,26 +626,27 @@ export class OptimizedSlidingSyncHandler {
   ): Promise<{ rooms?: Record<string, { user_ids: string[] }> }> {
     if (roomIds.length === 0) return {};
     
-    const placeholders = roomIds.map(() => '?').join(',');
-    const typing = await this.pool.executeQuery<{
-      room_id: string;
-      user_id: string;
-    }>(
-      `SELECT room_id, user_id FROM typing 
-       WHERE room_id IN (${placeholders})`,
-      roomIds,
-      'low'
-    );
+    //TODO: Implement via room durable objects
+    // const placeholders = roomIds.map(() => '?').join(',');
+    // const typing = await this.pool.executeQuery<{
+    //   room_id: string;
+    //   user_id: string;
+    // }>(
+    //   `SELECT room_id, user_id FROM typing 
+    //    WHERE room_id IN (${placeholders})`,
+    //   roomIds,
+    //   'low'
+    // );
     
-    const rooms: Record<string, { user_ids: string[] }> = {};
-    for (const t of typing) {
-      if (!rooms[t.room_id]) {
-        rooms[t.room_id] = { user_ids: [] };
-      }
-      rooms[t.room_id].user_ids.push(t.user_id);
-    }
+    // const rooms: Record<string, { user_ids: string[] }> = {};
+    // for (const t of typing) {
+    //   if (!rooms[t.room_id]) {
+    //     rooms[t.room_id] = { user_ids: [] };
+    //   }
+    //   rooms[t.room_id].user_ids.push(t.user_id);
+    // }
     
-    return { rooms };
+    return { rooms: {} };
   }
 
   /**
@@ -618,19 +658,6 @@ export class OptimizedSlidingSyncHandler {
   ): Promise<{ rooms?: Record<string, any> }> {
     // Implementation would fetch read receipts
     return {};
-  }
-
-  /**
-   * Generate next batch token
-   */
-  private async generateNextBatch(
-    userId: string,
-    lists: Record<string, ListConfig>,
-    since: string | null
-  ): Promise<string> {
-    // Simple implementation - use timestamp
-    // A real implementation would use a database stream position
-    return Date.now().toString();
   }
 
   /**
@@ -676,6 +703,14 @@ export class OptimizedSlidingSyncHandler {
       status: errorCode === 'M_BAD_JSON' ? 400 : 500
     });
   }
+}
+
+// Add helper to get current max stream position
+async function getCurrentStreamPosition(db: D1Database): Promise<number> {
+  const result = await db.prepare(
+    `SELECT MAX(stream_ordering) as max_pos FROM events`
+  ).first<{ max_pos: number }>();
+  return result?.max_pos ?? 0;
 }
 
 // ============================================

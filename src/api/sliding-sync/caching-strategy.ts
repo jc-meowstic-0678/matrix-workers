@@ -14,6 +14,7 @@ interface RoomSummary {
   memberCount: number;
   lastEventId?: string;
   lastEventTimestamp: number;
+  lastStreamPos: number; //added
   membership?: 'join' | 'invite' | 'leave' | 'ban' | 'knock';
   heroes?: Array<{
     userId: string;
@@ -23,10 +24,20 @@ interface RoomSummary {
   isDM?: boolean;
 }
 
+//interface RoomCacheEntry {
+//  summary: RoomSummary;
+//  lastEventId: string;
+//  lastEventTimestamp: number;
+//  memberCount: number;
+//  cachedAt: number;
+//  version: number;
+//}
+
 interface RoomCacheEntry {
   summary: RoomSummary;
   lastEventId: string;
   lastEventTimestamp: number;
+  lastStreamPos: number;   // <-- use stream position, not timestamp
   memberCount: number;
   cachedAt: number;
   version: number;
@@ -41,6 +52,7 @@ interface RoomRow {
   member_count: number;
   last_event_id: string | null;
   last_timestamp: number | null;
+  lastStreamPos: number;
   membership: 'join' | 'invite' | 'leave' | 'ban' | 'knock' | null;
 }
 
@@ -158,6 +170,9 @@ export class CachedSlidingSyncHandler {
             ORDER BY origin_server_ts DESC 
             LIMIT 1
           ) as last_timestamp,
+          ( 
+            SELECT stream_ordering FROM events WHERE room_id = r.room_id ORDER BY stream_ordering DESC LIMIT 1 ) 
+            as last_stream_pos,
           (
             SELECT membership FROM room_memberships 
             WHERE room_id = r.room_id AND user_id = ?
@@ -170,13 +185,15 @@ export class CachedSlidingSyncHandler {
 
       // Add since filter if provided (only return rooms with activity after since)
       if (since) {
-        const sinceTimestamp = parseInt(since);
-        if (!isNaN(sinceTimestamp)) {
-          query += ` AND EXISTS (
-            SELECT 1 FROM events 
-            WHERE room_id = r.room_id AND origin_server_ts > ?
-          )`;
-          params.push(sinceTimestamp);
+        let sincePos = 0;
+        const stripped = since.startsWith('s') ? since.slice(1) : since;
+        sincePos = parseInt(stripped,10) || 0;
+        if (sincePos > 0) {
+         query += ` AND EXISTS (
+         SELECT 1 FROM events 
+         WHERE room_id = r.room_id AND stream_ordering > ?
+         )`;
+         params.push(sincePos);
         }
       }
 
@@ -214,14 +231,14 @@ export class CachedSlidingSyncHandler {
       }
 
       // If client provided a since token, check if anything changed after that
+      let sincePos = 0;
       if (since) {
-        const sinceTimestamp = parseInt(since);
-        if (!isNaN(sinceTimestamp)) {
-          const lastChange = await this.getLastRoomChange(roomId);
-          if (lastChange && lastChange <= sinceTimestamp) {
-            return entry; // Cache is still fresh for this client
-          }
-        }
+      const stripped = since.startsWith('s') ? since.slice(1) : since;
+      sincePos = parseInt(stripped, 10) || 0;
+      }
+      if (sincePos > 0 && entry.lastStreamPos <= sincePos) {
+      // cache is fresh for this client
+      return entry;
       }
       
       return entry;
@@ -245,6 +262,7 @@ export class CachedSlidingSyncHandler {
       summary,
       lastEventId: summary.lastEventId || '',
       lastEventTimestamp: summary.lastEventTimestamp,
+      lastStreamPos: summary.lastStreamPos,
       memberCount: summary.memberCount,
       cachedAt: Date.now(),
       version: this.CACHE_VERSION
@@ -271,29 +289,23 @@ export class CachedSlidingSyncHandler {
    * Get timestamp of last change in a room
    */
   private async getLastRoomChange(roomId: string): Promise<number | null> {
-    try {
-      const result = await this.db.prepare(`
-        SELECT MAX(origin_server_ts) as last_change
-        FROM events
-        WHERE room_id = ?
-      `).bind(roomId).first<{ last_change: number | null }>();
-
-      return result?.last_change || null;
-    } catch (error) {
-      console.error(`Failed to get last change for room ${roomId}:`, error);
-      return null;
-    }
+  const result = await this.db.prepare(`
+    SELECT MAX(stream_ordering) as last_pos
+    FROM events
+    WHERE room_id = ?
+  `).bind(roomId).first<{ last_pos: number }>();
+  return result?.last_pos ?? null;
   }
 
   /**
    * Format raw database row into RoomSummary
    */
-  private formatRoomSummary(room: RoomRow): RoomSummary {
+  private async formatRoomSummary(room: RoomRow): RoomSummary {
     // Determine if this is a DM (room with 2 members and no name)
     const isDM = room.member_count === 2 && !room.name;
 
     // Get heroes (sample of members for display)
-    const heroes = this.getRoomHeroes(room.room_id, room.membership === 'join' ? 5 : 3);
+    const heroes = await this.getRoomHeroes(room.room_id, room.membership === 'join' ? 5 : 3);
 
     return {
       roomId: room.room_id,
@@ -304,6 +316,7 @@ export class CachedSlidingSyncHandler {
       memberCount: room.member_count,
       lastEventId: room.last_event_id || undefined,
       lastEventTimestamp: room.last_timestamp || 0,
+      lastStreamPos: room.last_stream_pos,
       membership: room.membership || undefined,
       heroes: heroes.slice(0, room.membership === 'join' ? 5 : 3),
       isDM
@@ -314,35 +327,32 @@ export class CachedSlidingSyncHandler {
    * Get heroes (sample members) for a room
    * Note: This would ideally be cached or batched, but kept simple for now
    */
-  private getRoomHeroes(
-    roomId: string,
-    limit: number
-  ): Array<{ userId: string; displayName?: string; avatarUrl?: string }> {
-    // This is a placeholder - in a real implementation, you'd query the database
-    // For now, we'll return an empty array and let the caller handle it
-    // The actual implementation would be:
-    /*
-    const result = await this.db.prepare(`
-      SELECT 
-        rm.user_id,
-        u.display_name,
-        u.avatar_url
-      FROM room_memberships rm
-      JOIN users u ON rm.user_id = u.user_id
-      WHERE rm.room_id = ? AND rm.membership = 'join'
-      LIMIT ?
-    `).bind(roomId, limit).all();
-    
-    return result.results.map(row => ({
-      userId: row.user_id,
-      displayName: row.display_name,
-      avatarUrl: row.avatar_url
-    }));
-    */
-    
-    // Temporary implementation to avoid errors
-    return [];
-  }
+  private async getRoomHeroes(
+  roomId: string,
+  limit: number
+  ): Promise<Array<{ userId: string; displayName?: string; avatarUrl?: string }>> {
+  const result = await this.db.prepare(`
+    SELECT 
+      rm.user_id,
+      u.display_name,
+      u.avatar_url
+    FROM room_memberships rm
+    JOIN users u ON rm.user_id = u.user_id
+    WHERE rm.room_id = ? AND rm.membership = 'join'
+    ORDER BY rm.joined_at DESC
+    LIMIT ?
+  `).bind(roomId, limit).all<{
+    user_id: string;
+    display_name: string | null;
+    avatar_url: string | null;
+  }>();
+
+  return result.results.map(row => ({
+    userId: row.user_id,
+    displayName: row.display_name || undefined,
+    avatarUrl: row.avatar_url || undefined,
+  }));
+ }
 
   /**
    * Invalidate cache for a room (call when room state changes)

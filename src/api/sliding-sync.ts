@@ -258,6 +258,7 @@ async function saveConnectionState(
 app.post('/v1/sync', requireAuth(), async (c: Context) => {
   const { optimizedHandler, monitor } = getHandlers(c);
   const userId = c.get('userId');
+  const deviceId = c.get('deviceId'); //get device id
   const startTime = Date.now();
 
   try {
@@ -271,7 +272,7 @@ app.post('/v1/sync', requireAuth(), async (c: Context) => {
     }
 
     // Use optimized handler for standard JSON response
-    const response = await optimizedHandler.handleSlidingSync(c.req.raw, userId);
+    const response = await optimizedHandler.handleSlidingSync(c.req.raw, userId, deviceId);
     
     // Track performance
     const duration = Date.now() - startTime;
@@ -314,7 +315,7 @@ app.get('/v1/sync', requireAuth(), async (c: Context) => {
       })
     });
     
-    return await optimizedHandler.handleSlidingSync(request, userId);
+    return await optimizedHandler.handleSlidingSync(request, userId, deviceId);
   } catch (error) {
     console.error('Sliding sync GET error:', error);
     return c.json(Errors.internal(error.message), 500);
@@ -330,7 +331,7 @@ app.post('/v1/sync/stream', requireAuth(), async (c: Context) => {
   const userId = c.get('userId');
   
   try {
-    return await streamingHandler.handleSlidingSyncStreaming(c.req.raw, userId);
+    return await streamingHandler.handleSlidingSyncStreaming(c.req.raw, userId, deviceId);
   } catch (error) {
     console.error('Streaming sync error:', error);
     return c.json(Errors.internal(error.message), 500);
@@ -450,7 +451,7 @@ app.get('/v3/sync', requireAuth(), async (c: Context) => {
       })
     });
     
-    const response = await optimizedHandler.handleSlidingSync(request, userId);
+    const response = await optimizedHandler.handleSlidingSync(request, userId, deviceId);
     const data = await response.json();
     
     // Transform sliding sync response to legacy format
