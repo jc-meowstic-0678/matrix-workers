@@ -57,6 +57,7 @@ export { RoomDurableObject, SyncDurableObject, FederationDurableObject, CallRoom
 export { RoomJoinWorkflow, PushNotificationWorkflow, FederationCatchupWorkflow, MediaCleanupWorkflow, StateCompactionWorkflow } from './workflows';
 
 export { handleFederationQueue } from './consumers/federation-consumer';
+import { sendFederationTransaction } from './consumers/federation-consumer';
 
 // Create the main app
 const app = new Hono<AppEnv>();
@@ -413,63 +414,72 @@ app.onError((err, c) => {
 
 export default app;
 
-// src/index.ts - Add this at the end of the file
+// src/index.ts - Add this at the end of the file, after your existing exports
 
 // ============================================
-// Queue Consumer for Federation
+// Queue Consumer for Federation (REQUIRED)
 // ============================================
 
 /**
  * Handles messages from the federation-outbound queue
- * Processes batches of federation messages to remote servers
+ * This function MUST be exported directly from the Worker entry point
+ * 
+ * @param batch - The batch of messages from the queue
+ * @param env - Environment bindings
+ * @param ctx - Execution context
  */
-export async function queue(batch: MessageBatch, env: Env, ctx: ExecutionContext) {
+export async function queue(batch: MessageBatch<FederationQueueMessage>, env: Env, ctx: ExecutionContext) {
   console.log(`[queue] Processing batch of ${batch.messages.length} messages from queue: ${batch.queue}`);
   
   // Group messages by destination for efficiency
-  const byDestination = new Map<string, any[]>();
+  const byDestination = new Map<string, FederationQueueMessage[]>();
   
   for (const message of batch.messages) {
     const { destination } = message.body;
     if (!byDestination.has(destination)) {
       byDestination.set(destination, []);
     }
-    byDestination.get(destination)!.push(message);
+    byDestination.get(destination)!.push(message.body);
   }
   
   // Process each destination's messages
   const results = await Promise.allSettled(
     Array.from(byDestination.entries()).map(async ([destination, messages]) => {
       try {
-        // Import the federation consumer handler
-        const { handleFederationQueue } = await import('./consumers/federation-consumer');
+        // Prepare batch for this destination
+        const pdus = messages.filter(m => m.pdu).map(m => m.pdu!);
+        const edus = messages.filter(m => m.edu).map(m => m.edu!);
         
-        // Create a synthetic batch for this destination
-        const destinationBatch = {
-          messages: messages.map(m => ({
-            ...m,
-            retry: (options?: any) => m.retry(options)
-          }))
-        };
+        // Send to remote server
+        const success = await sendFederationTransaction(env, destination, { pdus, edus });
         
-        await handleFederationQueue(destinationBatch as any, env);
-        
-        // Ack all messages for this destination on success
-        messages.forEach(m => m.ack());
-        
+        if (success) {
+          // Find and acknowledge all messages for this destination
+          batch.messages
+            .filter(m => m.body.destination === destination)
+            .forEach(m => m.ack());
+          
+          console.log(`[queue] Successfully sent to ${destination} (${messages.length} messages)`);
+        } else {
+          throw new Error(`Failed to send to ${destination}`);
+        }
       } catch (error) {
         console.error(`[queue] Failed to process messages for ${destination}:`, error);
         
-        // Retry messages with exponential backoff
-        for (const message of messages) {
+        // Find all messages for this destination
+        const destinationMessages = batch.messages.filter(m => m.body.destination === destination);
+        
+        // Retry with exponential backoff
+        for (const message of destinationMessages) {
           if (message.attempts < 5) {
             // Retry with delay: 60s, 120s, 240s, 480s, 960s
             const delaySeconds = Math.pow(2, message.attempts) * 60;
+            console.log(`[queue] Retrying message ${message.id} to ${destination} (attempt ${message.attempts + 1}, delay ${delaySeconds}s)`);
             message.retry({ delaySeconds });
           } else {
-            // Max retries exceeded, log and acknowledge to prevent blocking
+            // Max retries exceeded, send to DLQ
             console.error(`[queue] Max retries exceeded for message ${message.id} to ${destination}`);
-            message.ack();
+            message.ack(); // Acknowledge to remove from queue (will go to DLQ if configured)
           }
         }
       }
@@ -480,5 +490,6 @@ export async function queue(batch: MessageBatch, env: Env, ctx: ExecutionContext
   const succeeded = results.filter(r => r.status === 'fulfilled').length;
   const failed = results.filter(r => r.status === 'rejected').length;
   
-  console.log(`[queue] Batch processing complete: ${succeeded} destinations succeeded, ${failed} failed`);
+  console.log(`[queue] Batch processing complete: ${succeeded} destinations succeeded, ${failed} destinations queued for retry`);
 }
+export { queue };  
