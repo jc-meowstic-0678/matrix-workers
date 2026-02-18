@@ -504,7 +504,7 @@ export class OptimizedSlidingSyncHandler {
    */
   private async processExtensions(
     userId: string,
-    deviceId: string;
+    deviceId: string,
     extensions: ExtensionsRequest,
     since: string | null
   ): Promise<ExtensionsResponse> {
@@ -547,7 +547,7 @@ export class OptimizedSlidingSyncHandler {
    */
 private async processToDevice(
   userId: string,
-  deviceId: string;
+  deviceId: string,
   config: { since?: string; limit?: number }
 ): Promise<{ next_batch: string; events: any[] }> {
   const limit = config.limit || 100;
