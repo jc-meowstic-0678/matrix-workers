@@ -50,7 +50,7 @@ import { rateLimitMiddleware } from './middleware/rate-limit';
 import { requireAuth } from './middleware/auth';
 import { analyticsMiddleware } from './middleware/analytics';
 
-// Import Durable Objects
+// Import Durable Objects (named exports remain)
 export { 
   RoomDurableObject, 
   SyncDurableObject, 
@@ -63,7 +63,7 @@ export {
   RoomNotificationQueue
 } from './durable-objects';
 
-// Import Workflows
+// Import Workflows (named exports remain)
 export { 
   RoomJoinWorkflow, 
   PushNotificationWorkflow, 
@@ -359,7 +359,7 @@ app.onError((err, c) => {
 });
 
 // ============================================
-// QUEUE HANDLER - MUST BE EXPORTED DIRECTLY
+// QUEUE HANDLER - MUST BE ATTACHED TO DEFAULT EXPORT
 // ============================================
 
 // Define the message type for type safety
@@ -372,13 +372,13 @@ interface FederationQueueMessage {
 
 /**
  * Handles messages from the federation-outbound queue
- * This function MUST be exported directly from the Worker entry point
+ * This function MUST be attached to the default export
  * 
  * @param batch - The batch of messages from the queue
  * @param env - Environment bindings
  * @param ctx - Execution context
  */
-export async function queue(batch: MessageBatch<FederationQueueMessage>, env: Env, ctx: ExecutionContext) {
+async function queue(batch: MessageBatch<FederationQueueMessage>, env: Env, ctx: ExecutionContext) {
   console.log(`[queue] Processing batch of ${batch.messages.length} messages from queue: ${batch.queue}`);
   
   // Group messages by destination for efficiency
@@ -447,9 +447,11 @@ export async function queue(batch: MessageBatch<FederationQueueMessage>, env: En
 }
 
 // ============================================
-// DO NOT ADD ANOTHER "export { queue }" HERE!
-// The function above is already exported
+// DEFAULT EXPORT (fetch + queue)
 // ============================================
 
-// The default export is your Hono app
-export default app;
+// The default export must be an object with fetch and queue handlers
+export default {
+  fetch: app.fetch,
+  queue: queue
+};
