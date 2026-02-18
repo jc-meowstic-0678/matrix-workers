@@ -1,7 +1,7 @@
 // src/admin/ui/dashboard.html.ts
 // Main dashboard HTML template that integrates all views
 
-import { loginComponent } from './components/login';
+import { loginComponent, loginStyles } from './components/login';
 import { sidebarComponent } from './components/sidebar';
 import { allModals } from './components/modals';
 import { 
@@ -728,6 +728,7 @@ export const adminDashboardHtml = (serverName: string, isAuthenticated: boolean 
     ${getSecurityStyles()}
     ${getSettingsStyles()}
     ${getNotificationStyles()}
+    ${loginStyles}
   </style>
 </head>
 <body>
