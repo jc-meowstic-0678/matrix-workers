@@ -45,7 +45,6 @@ import oauth from './api/oauth';
 // Import admin dashboard and API routes
 import { adminDashboardHtml } from './admin/ui/dashboard.html.js';
 import adminApi, { ensureAdminUser } from './admin/routes';
-import federationApi from './admin/api/federation';
 
 import { rateLimitMiddleware } from './middleware/rate-limit';
 import { requireAuth } from './middleware/auth';
