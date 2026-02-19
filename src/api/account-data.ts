@@ -22,8 +22,8 @@ const app = new Hono<AppEnv>();
 
 // Helper to get the UserKeys Durable Object stub for a user
 function getUserKeysDO(env: Env, userId: string): DurableObjectStub {
-  const id = env.USER_KEYS.idFromName(userId);
-  return env.USER_KEYS.get(id);
+  const id = env.USER_KEYS_DO.idFromName(userId);
+  return env.USER_KEYS_DO.get(id);
 }
 
 // Get E2EE account data from Durable Object (strongly consistent)
