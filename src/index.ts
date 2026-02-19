@@ -44,7 +44,7 @@ import oauth from './api/oauth';
 
 // Import admin dashboard and API routes
 import { adminDashboardHtml } from './admin/ui/dashboard.html.js';
-import adminApi from './admin/routes';
+import adminApi, { ensureAdminUser } from './admin/routes';
 
 import { rateLimitMiddleware } from './middleware/rate-limit';
 import { requireAuth } from './middleware/auth';
@@ -102,6 +102,7 @@ app.get('/health', (c) => c.json({ status: 'ok', server: 'matrix-worker' }));
 app.route('/admin', adminApi);
 
 app.get('/admin', async (c) => {
+  await ensureAdminUser(c.env); //line added to ensure a default admin is set
   const adminToken = await c.env.CACHE.get('admin:session');
   const isAuthenticated = !!adminToken;
   const html = adminDashboardHtml(c.env.SERVER_NAME, isAuthenticated);
@@ -114,6 +115,7 @@ app.get('/admin', async (c) => {
 });
 
 app.get('/admin/', async (c) => {
+  await ensureAdminUser(c.env); //line added to ensure a default admin is set
   const adminToken = await c.env.CACHE.get('admin:session');
   const isAuthenticated = !!adminToken;
   const html = adminDashboardHtml(c.env.SERVER_NAME, isAuthenticated);

@@ -4,6 +4,7 @@ import type { AppEnv } from '../types';
 import { requireAdminAuth, handleAdminLogin, handleAdminLogout, handleAdminStatus } from './auth';
 import { hashPassword } from '../utils/crypto';
 import { adminApi } from './index';
+import { getUserById } from '../services/database';
 
 // Re-export the main admin API router
 export { adminApi };
@@ -86,4 +87,21 @@ adminAuthApi.post('/api/users', requireAdminAuth, async (c) => {
   }
 });
 
+async function ensureAdminUser(env: Env) {
+  const adminUserId = `@server_admin:${env.SERVER_NAME}`;
+  const existing = await getUserById(env.DB, adminUserId);
+  if (!existing) {
+    const passwordHash = env.ADMIN_PASSWORD_HASH; // already hashed
+    if (!passwordHash) {
+      console.error('ADMIN_PASSWORD_HASH secret not set');
+      return;
+    }
+    await env.DB.prepare(
+      `INSERT INTO users (user_id, localpart, password_hash, admin, created_at, updated_at)
+       VALUES (?, ?, ?, 1, ?, ?)`
+    ).bind(adminUserId, 'server_admin', passwordHash, Date.now(), Date.now()).run();
+    console.log('Created default admin user');
+  }
+}
+export { ensureAdminUser };
 export default adminAuthApi;
