@@ -1,7 +1,7 @@
 // Matrix Server-Server (Federation) API endpoints
 // Fully optimized with Durable Objects for E2EE and corrected schema handling
 // Includes all required CS-API-to-SS endpoints: /send, /event, /state, /backfill, etc.
-
+console.log('[federation] module loaded - this should appear in logs');
 import { Hono } from 'hono';
 import type { DurableObjectStub } from '@cloudflare/workers-types';
 import type { AppEnv, PDU, RoomState } from '../types';
