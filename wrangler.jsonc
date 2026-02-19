@@ -67,7 +67,7 @@
         "class_name": "RateLimitDurableObject"
       },
       {
-        "name": "ROOM_NOFIFICATION_QUEUE",
+        "name": "ROOM_NOTIFICATION_QUEUE",
         "class_name": "RoomNotificationQueue"
       }
     ]

@@ -863,3 +863,13 @@ export async function hasActiveWebSocket(
     return false;
   }
 }
+
+/**
+ * Get the room version for a given room ID
+ */
+export async function getRoomVersion(db: D1Database, roomId: string): Promise<string | null> {
+  const result = await db.prepare(
+    'SELECT room_version FROM rooms WHERE room_id = ?'
+  ).bind(roomId).first<{ room_version: string }>();
+  return result?.room_version || null;
+}
