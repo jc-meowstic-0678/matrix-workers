@@ -103,6 +103,7 @@ CREATE TABLE IF NOT EXISTS room_memberships (
     event_id TEXT NOT NULL,
     display_name TEXT,
     avatar_url TEXT,
+    created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
     PRIMARY KEY (room_id, user_id),
     FOREIGN KEY (room_id) REFERENCES rooms(room_id) ON DELETE CASCADE
 );
