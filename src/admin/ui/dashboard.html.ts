@@ -816,14 +816,14 @@ function getNotificationStyles() { return notificationStyles; }
 function getApiClient() { return createApiClient; }
 function getViewState() { return viewState; }
 function getViewSwitcher() { return viewSwitcher; }
-function getUserFunctions() { return usersFunctions; }       // ✅ plural, from import
-function getRoomFunctions() { return roomsFunctions; }       // ✅ plural
-function getMediaFunctions() { return mediaFunctions; }      // ✅ plural
-function getReportFunctions() { return reportsFunctions; }   // ✅ plural
-function getFederationFunctions() { return federationFunctions; }
-function getSecurityFunctions() { return securityFunctions; }
-function getSettingsFunctions() { return settingsFunctions; }
-function getDashboardFunctions() { return dashboardFunctions; }
+function getUserFunctions() { return usersFunctions(); }       // Call the function to get the string
+function getRoomFunctions() { return roomsFunctions(); }       // Call the function to get the string
+function getMediaFunctions() { return mediaFunctions(); }      // Call the function to get the string
+function getReportFunctions() { return reportsFunctions(); }   // Call the function to get the string
+function getFederationFunctions() { return federationFunctions(); }
+function getSecurityFunctions() { return securityFunctions(); }
+function getSettingsFunctions() { return settingsFunctions(); }
+function getDashboardFunctions() { return dashboardFunctions(); }
 function getNotificationHelper() { return notificationHelper; }
 function getInitialization() { return initialization; }
 
