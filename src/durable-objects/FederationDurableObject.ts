@@ -2,6 +2,7 @@
 
 import { DurableObject } from 'cloudflare:workers';
 import type { Env } from '../types';
+import { signFederationRequest, getServerSigningKey } from '../services/federation-keys';
 
 interface FederationTarget {
   serverName: string;
@@ -267,16 +268,36 @@ export class FederationDurableObject extends DurableObject<Env> {
       content: e.content,
     }));
 
+    const txnId = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const uri = `/_matrix/federation/v1/send/${txnId}`;
+    const body = {
+      pdus,
+      edus: eduPayloads,
+    };
+
+    // Build auth headers
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    const signingKey = await getServerSigningKey(this.env.DB);
+    if (signingKey) {
+      const authHeader = await signFederationRequest(
+        'PUT',
+        uri,
+        this.env.SERVER_NAME,
+        destination,
+        signingKey,
+        body
+      );
+      headers['Authorization'] = authHeader;
+    }
+
     try {
-      const response = await fetch(`https://${destination}/_matrix/federation/v1/send/${Date.now()}`, {
+      const response = await fetch(`https://${destination}${uri}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          pdus,
-          edus: eduPayloads,
-        }),
+        headers,
+        body: JSON.stringify(body),
       });
 
       if (response.ok) {

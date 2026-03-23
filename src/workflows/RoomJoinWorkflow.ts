@@ -9,6 +9,7 @@
 import { WorkflowEntrypoint, WorkflowEvent, WorkflowStep } from 'cloudflare:workers';
 import type { Env } from '../types';
 import { generateEventId } from '../utils/ids';
+import { signFederationRequest, getServerSigningKey } from '../services/federation-keys';
 import {
   storeEvent,
   updateMembership,
@@ -149,12 +150,28 @@ export class RoomJoinWorkflow extends WorkflowEntrypoint<Env, JoinParams> {
     console.log('[RoomJoinWorkflow] Making make_join request', { remoteServer, roomId, userId });
 
     const url = `https://${remoteServer}/_matrix/federation/v1/make_join/${encodeURIComponent(roomId)}/${encodeURIComponent(userId)}`;
+    const uri = `/_matrix/federation/v1/make_join/${encodeURIComponent(roomId)}/${encodeURIComponent(userId)}`;
+
+    // Get signing key and build auth header
+    const signingKey = await getServerSigningKey(this.env.DB);
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (signingKey) {
+      const authHeader = await signFederationRequest(
+        'GET',
+        uri,
+        this.env.SERVER_NAME,
+        remoteServer,
+        signingKey
+      );
+      headers['Authorization'] = authHeader;
+    }
 
     const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
     });
 
     if (!response.ok) {
@@ -244,12 +261,29 @@ export class RoomJoinWorkflow extends WorkflowEntrypoint<Env, JoinParams> {
     console.log('[RoomJoinWorkflow] Sending send_join request', { remoteServer, roomId, eventId: joinEvent.event_id });
 
     const url = `https://${remoteServer}/_matrix/federation/v1/send_join/${encodeURIComponent(roomId)}/${encodeURIComponent(joinEvent.event_id)}`;
+    const uri = `/_matrix/federation/v1/send_join/${encodeURIComponent(roomId)}/${encodeURIComponent(joinEvent.event_id)}`;
+
+    // Get signing key and build auth header
+    const signingKey = await getServerSigningKey(this.env.DB);
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (signingKey) {
+      const authHeader = await signFederationRequest(
+        'PUT',
+        uri,
+        this.env.SERVER_NAME,
+        remoteServer,
+        signingKey,
+        joinEvent
+      );
+      headers['Authorization'] = authHeader;
+    }
 
     const response = await fetch(url, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(joinEvent),
     });
 

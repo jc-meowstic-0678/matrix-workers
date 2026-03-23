@@ -5,6 +5,7 @@
 
 import { WorkflowEntrypoint, WorkflowEvent, WorkflowStep } from 'cloudflare:workers';
 import type { Env } from '../types';
+import { signFederationRequest, getServerSigningKey } from '../services/federation-keys';
 
 export interface CatchupParams {
   serverName: string;
@@ -40,6 +41,9 @@ export class FederationCatchupWorkflow extends WorkflowEntrypoint<Env, CatchupPa
 
     let totalBackfilled = 0;
 
+    // Get signing key for auth header
+    const signingKey = await getServerSigningKey(this.env.DB);
+
     // Step 2: For each room, request missing events
     for (const roomId of roomIds) {
       const count = await step.do(`backfill-${roomId}`, async () => {
@@ -51,17 +55,37 @@ export class FederationCatchupWorkflow extends WorkflowEntrypoint<Env, CatchupPa
 
           if (!latestEvent) return 0;
 
+          const body = {
+            limit: 100,
+            earliest_events: [latestEvent.event_id],
+            latest_events: [],
+          };
+          const uri = `/_matrix/federation/v1/get_missing_events/${encodeURIComponent(roomId)}`;
+
+          // Build auth headers
+          const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+          };
+
+          if (signingKey) {
+            const authHeader = await signFederationRequest(
+              'POST',
+              uri,
+              this.env.SERVER_NAME,
+              serverName,
+              signingKey,
+              body
+            );
+            headers['Authorization'] = authHeader;
+          }
+
           // Request missing events from the remote server
           const resp = await fetch(
-            `https://${serverName}/_matrix/federation/v1/get_missing_events/${encodeURIComponent(roomId)}`,
+            `https://${serverName}${uri}`,
             {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                limit: 100,
-                earliest_events: [latestEvent.event_id],
-                latest_events: [],
-              }),
+              headers,
+              body: JSON.stringify(body),
               signal: AbortSignal.timeout(30000),
             }
           );
