@@ -824,12 +824,21 @@ function getInitialization() { return initialization; }
 const createApiClient = `
   const api = {
     async login(password) {
-      const response = await fetch('/admin/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password })
-      });
-      return response.json();
+      try {
+        const response = await fetch('/admin/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+        const data = await response.json();
+        if (!response.ok && !data.success) {
+          return { success: false, error: data.error || 'Login failed', status: response.status };
+        }
+        return data;
+      } catch (err) {
+        console.error('Login fetch error:', err);
+        return { success: false, error: err.message || 'Network error: ' + String(err) };
+      }
     },
 
     async logout() {
@@ -1033,7 +1042,11 @@ const initialization = `
             switchView('dashboard');
           } else {
             if (errorDiv) {
-              errorDiv.textContent = result.error || 'Login failed';
+              let errorText = result.error || 'Login failed';
+              if (result.status) {
+                errorText += ' (HTTP ' + result.status + ')';
+              }
+              errorDiv.textContent = errorText;
               errorDiv.style.display = 'block';
             }
           }
