@@ -838,8 +838,8 @@ export const usersFunctions = (): string => `
   let userStatusFilter = 'all';
   let usersSearchTimeout;
   let currentUserTab = 'profile';
-  let registrationsChart;
-  let activityChart;
+  let usersRegistrationsChart;
+  let usersActivityChart;
   
   async function loadUsers(page = 0, search = '') {
     document.getElementById('usersLoading').style.display = 'block';
@@ -1104,9 +1104,9 @@ export const usersFunctions = (): string => `
     
     const regCtx = document.getElementById('userRegistrationsChart')?.getContext('2d');
     if (regCtx) {
-      if (registrationsChart) registrationsChart.destroy();
+      if (usersRegistrationsChart) usersRegistrationsChart.destroy();
       
-      registrationsChart = new Chart(regCtx, {
+      usersRegistrationsChart = new Chart(regCtx, {
         type: 'line',
         data: {
           labels: dayLabels,
@@ -1143,9 +1143,9 @@ export const usersFunctions = (): string => `
     // Activity chart (mock data for now)
     const activityCtx = document.getElementById('userActivityChart')?.getContext('2d');
     if (activityCtx) {
-      if (activityChart) activityChart.destroy();
+      if (usersActivityChart) usersActivityChart.destroy();
       
-      activityChart = new Chart(activityCtx, {
+      usersActivityChart = new Chart(activityCtx, {
         type: 'bar',
         data: {
           labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],

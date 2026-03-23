@@ -531,7 +531,7 @@ export const reportsFunctions = (): string => `
   let reportsSeverityFilter = 'all';
   let reportsSearchTimeout;
   let reportsChart;
-  let timelineChart;
+  let reportsTimelineChart;
   
   async function loadReports(page = 0) {
     document.getElementById('reportsLoading').style.display = 'block';
@@ -842,9 +842,9 @@ export const reportsFunctions = (): string => `
     const timelineCtx = document.getElementById('reportsTimelineChart')?.getContext('2d');
     
     if (timelineCtx) {
-      if (timelineChart) timelineChart.destroy();
+      if (reportsTimelineChart) reportsTimelineChart.destroy();
       
-      timelineChart = new Chart(timelineCtx, {
+      reportsTimelineChart = new Chart(timelineCtx, {
         type: 'line',
         data: {
           labels: timelineData.labels,
