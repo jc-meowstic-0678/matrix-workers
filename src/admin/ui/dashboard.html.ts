@@ -960,7 +960,7 @@ const viewSwitcher = `
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
     document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
     
-    const navItem = document.querySelector(\`[data-view="\${viewName}"]\`);
+    var navItem = document.querySelector('[data-view="' + viewName + '"]');
     if (navItem) navItem.classList.add('active');
     
     document.getElementById(viewName + 'View').style.display = 'block';
@@ -998,22 +998,19 @@ const viewSwitcher = `
 const notificationHelper = `
   let notificationTimeout;
   
-  function showNotification(message, type = 'info') {
-    const existing = document.getElementById('notification');
+  function showNotification(message, type) {
+    var existing = document.getElementById('notification');
     if (existing) existing.remove();
     
-    const notification = document.createElement('div');
+    var notification = document.createElement('div');
     notification.id = 'notification';
-    notification.className = \`notification \${type}\`;
-    notification.innerHTML = \`
-      <span class="notification-message">\${message}</span>
-      <button class="notification-close" onclick="this.parentElement.remove()">✕</button>
-    \`;
+    notification.className = 'notification ' + type;
+    notification.innerHTML = '<span class="notification-message">' + message + '</span><button class="notification-close" onclick="this.parentElement.remove()">✕</button>';
     
     document.body.appendChild(notification);
     
     clearTimeout(notificationTimeout);
-    notificationTimeout = setTimeout(() => {
+    notificationTimeout = setTimeout(function() {
       if (notification.parentElement) {
         notification.remove();
       }
