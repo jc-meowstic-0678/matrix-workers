@@ -896,12 +896,12 @@ export const usersFunctions = (): string => `
             <button class="btn-icon-sm" onclick="viewUserDetails('\${user.user_id}')" title="View details">👁️</button>
             <button class="btn-icon-sm warning" onclick="showResetPasswordModal('\${user.user_id}')" title="Reset password">🔑</button>
             \${!user.admin ? 
-              '<button class="btn-icon-sm success" onclick="makeUserAdmin(\'' + user.user_id + '\')" title="Make admin">⭐</button>' : 
-              '<button class="btn-icon-sm" onclick="removeUserAdmin(\'' + user.user_id + '\')" title="Remove admin">⬇️</button>'
+              `<button class="btn-icon-sm success" onclick="makeUserAdmin('${user.user_id}')" title="Make admin">⭐</button>` : 
+              `<button class="btn-icon-sm" onclick="removeUserAdmin('${user.user_id}')" title="Remove admin">⬇️</button>`
             }
             \${user.is_deactivated ? 
-              '<button class="btn-icon-sm success" onclick="reactivateUser(\'' + user.user_id + '\')" title="Reactivate">✅</button>' : 
-              '<button class="btn-icon-sm danger" onclick="deactivateUser(\'' + user.user_id + '\')" title="Deactivate">⛔</button>'
+              `<button class="btn-icon-sm success" onclick="reactivateUser('${user.user_id}')" title="Reactivate">✅</button>` : 
+              `<button class="btn-icon-sm danger" onclick="deactivateUser('${user.user_id}')" title="Deactivate">⛔</button>`
             }
           </td>
         \`;
