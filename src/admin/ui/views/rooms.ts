@@ -758,12 +758,12 @@ export const roomsFunctions = (): string => `
           <td><span class="visibility-badge \${room.is_public ? 'visibility-public' : 'visibility-private'}">\${room.is_public ? 'Public' : 'Private'}</span></td>
           <td><span class="encryption-badge \${room.encrypted ? 'encryption-enabled' : 'encryption-disabled'}">\${room.encrypted ? '✅ Encrypted' : '❌ Unencrypted'}</span></td>
           <td>\${new Date(room.created_at).toLocaleDateString()}</td>
-          <td class="action-group">
-            <button class="btn-icon-sm" onclick="viewRoomDetails('\${room.room_id}')" title="View details">👁️</button>
-            <button class="btn-icon-sm" onclick="showRoomMembers('\${room.room_id}')" title="View members">👥</button>
-            <button class="btn-icon-sm warning" onclick="showUpgradeRoom('\${room.room_id}')" title="Upgrade room">⬆️</button>
-            <button class="btn-icon-sm danger" onclick="showDeleteRoom('\${room.room_id}')" title="Delete room">🗑️</button>
-          </td>
+           <td class="action-group">
+            <button class="btn-icon-sm" onclick='viewRoomDetails(\${JSON.stringify(room.room_id)})' title="View details">👁️</button>
+            <button class="btn-icon-sm" onclick='showRoomMembers(\${JSON.stringify(room.room_id)})' title="View members">👥</button>
+            <button class="btn-icon-sm warning" onclick='showUpgradeRoom(\${JSON.stringify(room.room_id)})' title="Upgrade room">⬆️</button>
+            <button class="btn-icon-sm danger" onclick='showDeleteRoom(\${JSON.stringify(room.room_id)})' title="Delete room">🗑️</button>
+           </td>
         \`;
         tbody.appendChild(tr);
       });
@@ -1075,7 +1075,7 @@ export const roomsFunctions = (): string => `
           <td>\${room.event_count || 0}</td>
           <td>\${room.state_events || 0}</td>
           <td>
-            <button class="btn-icon-sm" onclick="viewRoomDetails('\${room.room_id}')">👁️</button>
+            <button class="btn-icon-sm" onclick='viewRoomDetails(\${JSON.stringify(room.room_id)})'>👁️</button>
           </td>
         \`;
         tbody.appendChild(tr);

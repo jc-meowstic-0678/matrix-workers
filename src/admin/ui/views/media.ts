@@ -745,7 +745,7 @@ export const mediaFunctions = (): string => `
           <td>\${formatBytes(user.size)}</td>
           <td>\${percentage}%</td>
           <td>
-            <button class="btn-icon-sm" onclick="filterByUser('\${user.userId}')" title="Show user's files">👁️</button>
+            <button class="btn-icon-sm" onclick='filterByUser(\${JSON.stringify(user.userId)})' title="Show user's files">👁️</button>
           </td>
         \`;
         tbody.appendChild(tr);
