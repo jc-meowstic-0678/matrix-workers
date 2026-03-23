@@ -184,19 +184,26 @@ app.put('/_matrix/federation/v1/send/:txnId', async (c) => {
       }
 
       // Validate event signature (using remote server's key)
-      // const serverName = event.sender.split(':')[1];
-      // const keyValid = await verifyRemoteSignature(event, serverName, keyId, db, c.env.CACHE);
-      // if (!keyValid) {
-      //   pduResults[eventId] = { error: { errcode: 'M_FORBIDDEN', error: 'Invalid signature' } };
-      //   continue;
-      // }
+      const serverName = event.sender.split(':')[1];
+      const signatures = event.signatures as Record<string, Record<string, string>> | undefined;
+      const serverSignatures = signatures?.[serverName];
+      const keyId = serverSignatures ? Object.keys(serverSignatures)[0] : undefined;
+      if (!keyId) {
+        pduResults[eventId] = { error: { errcode: 'M_FORBIDDEN', error: 'Missing signature' } };
+        continue;
+      }
+      const keyValid = await verifyRemoteSignature(event, serverName, keyId, db, c.env.CACHE);
+      if (!keyValid) {
+        pduResults[eventId] = { error: { errcode: 'M_FORBIDDEN', error: 'Invalid signature' } };
+        continue;
+      }
 
       // Validate content hash
-      // const hashValid = await verifyContentHash(event);
-      // if (!hashValid) {
-      //   pduResults[eventId] = { error: { errcode: 'M_BAD_JSON', error: 'Content hash mismatch' } };
-      //   continue;
-      // }
+      const hashValid = await verifyContentHash(event);
+      if (!hashValid) {
+        pduResults[eventId] = { error: { errcode: 'M_BAD_JSON', error: 'Content hash mismatch' } };
+        continue;
+      }
 
       // Check event auth (room state, power levels, etc.)
       const authCheck = await checkEventAuth(db, event, origin);
@@ -614,7 +621,12 @@ app.put('/_matrix/federation/v1/send_join/:roomId/:eventId', async (c) => {
 
   // Verify signatures
   const origin = joinEvent.sender.split(':')[1];
-  const keyValid = await verifyRemoteSignature(joinEvent, origin, db, c.env.CACHE);
+  const signatures = joinEvent.signatures as Record<string, Record<string, string>> | undefined;
+  const keyId = Object.keys(signatures?.[origin] || {})[0];
+  if (!keyId) {
+    return c.json({ error: 'Missing signature' }, 403);
+  }
+  const keyValid = await verifyRemoteSignature(joinEvent, origin, keyId, db, c.env.CACHE);
   if (!keyValid) {
     return c.json({ error: 'Invalid signature' }, 403);
   }
@@ -662,7 +674,12 @@ app.put('/_matrix/federation/v1/send_leave/:roomId/:eventId', async (c) => {
   }
 
   const origin = leaveEvent.sender.split(':')[1];
-  const keyValid = await verifyRemoteSignature(leaveEvent, origin, db, c.env.CACHE);
+  const signatures = leaveEvent.signatures as Record<string, Record<string, string>> | undefined;
+  const keyId = Object.keys(signatures?.[origin] || {})[0];
+  if (!keyId) {
+    return c.json({ error: 'Missing signature' }, 403);
+  }
+  const keyValid = await verifyRemoteSignature(leaveEvent, origin, keyId, db, c.env.CACHE);
   if (!keyValid) {
     return c.json({ error: 'Invalid signature' }, 403);
   }
@@ -702,7 +719,12 @@ app.put('/_matrix/federation/v2/invite/:roomId/:eventId', async (c) => {
   }
 
   const origin = inviteEvent.sender.split(':')[1];
-  const keyValid = await verifyRemoteSignature(inviteEvent, origin, db, c.env.CACHE);
+  const signatures = inviteEvent.signatures as Record<string, Record<string, string>> | undefined;
+  const keyId = Object.keys(signatures?.[origin] || {})[0];
+  if (!keyId) {
+    return c.json({ error: 'Missing signature' }, 403);
+  }
+  const keyValid = await verifyRemoteSignature(inviteEvent, origin, keyId, db, c.env.CACHE);
   if (!keyValid) {
     return c.json({ error: 'Invalid signature' }, 403);
   }

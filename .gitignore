@@ -41,3 +41,4 @@ coverage/
 droplet*.json
 register-admin.json
 test-jwt.json
+/.vs
