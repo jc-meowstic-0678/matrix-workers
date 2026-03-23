@@ -321,7 +321,7 @@ export const dashboardFunctions = (): string => `
     }
   }
   
-  function formatUptime(ms: number): string {
+  function formatUptime(ms): string {
     const seconds = Math.floor(ms / 1000);
     const minutes = Math.floor(seconds / 60);
     const hours = Math.floor(minutes / 60);
@@ -356,7 +356,7 @@ export const dashboardFunctions = (): string => `
     }
   }
   
-  function initRegistrationsChart(data: any) {
+  function initRegistrationsChart(data) {
     const ctx = document.getElementById('registrationsChartCanvas')?.getContext('2d');
     if (!ctx) return;
     
@@ -368,10 +368,10 @@ export const dashboardFunctions = (): string => `
     registrationsChart = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: data.data.map((d: any) => d.date),
+        labels: data.data.map((d) => d.date),
         datasets: [{
           label: 'Registrations',
-          data: data.data.map((d: any) => d.registrations),
+          data: data.data.map((d) => d.registrations),
           borderColor: '#22c55e',
           backgroundColor: 'rgba(34, 197, 94, 0.1)',
           tension: 0.4,
@@ -409,7 +409,7 @@ export const dashboardFunctions = (): string => `
     });
   }
   
-  function initMessagesChart(data: any) {
+  function initMessagesChart(data) {
     const ctx = document.getElementById('messagesChartCanvas')?.getContext('2d');
     if (!ctx) return;
     
@@ -421,10 +421,10 @@ export const dashboardFunctions = (): string => `
     messagesChart = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: data.data.map((d: any) => d.date),
+        labels: data.data.map((d) => d.date),
         datasets: [{
           label: 'Messages',
-          data: data.data.map((d: any) => d.events),
+          data: data.data.map((d) => d.events),
           backgroundColor: '#3b82f6',
           borderRadius: 4
         }]
@@ -474,7 +474,7 @@ export const dashboardFunctions = (): string => `
       switch(filter) {
         case 'users':
           const users = await api.get('/users?limit=10');
-          activities = users.items.map((u: any) => ({
+          activities = users.items.map((u) => ({
             time: u.created_at,
             type: 'user',
             user: u.user_id,
@@ -484,7 +484,7 @@ export const dashboardFunctions = (): string => `
           
         case 'rooms':
           const rooms = await api.get('/rooms?limit=10');
-          activities = rooms.items.map((r: any) => ({
+          activities = rooms.items.map((r) => ({
             time: r.created_at,
             type: 'room',
             user: r.creator_id || 'unknown',
@@ -505,13 +505,13 @@ export const dashboardFunctions = (): string => `
           ]);
           
           activities = [
-            ...recentUsers.items.map((u: any) => ({
+            ...recentUsers.items.map((u) => ({
               time: u.created_at,
               type: 'user',
               user: u.user_id,
               description: \`User \${u.display_name || u.user_id} registered\`
             })),
-            ...recentRooms.items.map((r: any) => ({
+            ...recentRooms.items.map((r) => ({
               time: r.created_at,
               type: 'room',
               user: r.creator_id || 'unknown',

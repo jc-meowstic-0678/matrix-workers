@@ -358,7 +358,7 @@ export const mediaFunctions = (): string => `
   let timelineChart;
   
   // File size formatter
-  const formatBytes = (bytes: number): string => {
+  const formatBytes = (bytes): string => {
     if (bytes === 0) return '0 B';
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
@@ -408,7 +408,7 @@ export const mediaFunctions = (): string => `
       const tbody = document.getElementById('mediaList');
       tbody.innerHTML = '';
       
-      paginatedMedia.forEach((media: any) => {
+      paginatedMedia.forEach((media) => {
         const tr = document.createElement('tr');
         tr.innerHTML = \`
           <td>\${getMediaPreview(media)}</td>
@@ -449,7 +449,7 @@ export const mediaFunctions = (): string => `
     }
   }
   
-  function getMediaPreview(media: any): string {
+  function getMediaPreview(media) {
     const type = media.content_type.split('/')[0];
     
     if (type === 'image') {
@@ -463,8 +463,8 @@ export const mediaFunctions = (): string => `
     }
   }
   
-  function countMediaTypes(media: any[]): Record<string, number> {
-    const counts: Record<string, number> = {};
+  function countMediaTypes(media: any[]):  {
+    const counts:  = {};
     media.forEach(item => {
       const type = item.content_type.split('/')[0];
       counts[type] = (counts[type] || 0) + 1;
@@ -472,7 +472,7 @@ export const mediaFunctions = (): string => `
     return counts;
   }
   
-  function filterMediaItems(items: any[]): any[] {
+  function filterMediaItems(items): any[] {
     return items.filter(item => {
       // Type filter
       if (mediaTypeFilter !== 'all') {
@@ -511,7 +511,7 @@ export const mediaFunctions = (): string => `
     }, 300);
   }
   
-  function sortMediaArray(media: any[], field: string, direction: string): any[] {
+  function sortMediaArray(media: any[], field: string, direction): any[] {
     return [...media].sort((a, b) => {
       let aVal, bVal;
       
@@ -548,7 +548,7 @@ export const mediaFunctions = (): string => `
     });
   }
   
-  function sortMedia(field: string) {
+  function sortMedia(field) {
     if (mediaSortField === field) {
       mediaSortDirection = mediaSortDirection === 'asc' ? 'desc' : 'asc';
     } else {
@@ -566,7 +566,7 @@ export const mediaFunctions = (): string => `
     loadMedia(0);
   }
   
-  function renderMediaPagination(currentPage: number, totalPages: number) {
+  function renderMediaPagination(currentPage: number, totalPages) {
     const paginationEl = document.getElementById('mediaPagination');
     paginationEl.innerHTML = '';
     
@@ -680,7 +680,7 @@ export const mediaFunctions = (): string => `
     const now = Date.now();
     const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
     
-    const dayCounts: Record<string, number> = {};
+    const dayCounts:  = {};
     const labels: string[] = [];
     
     // Initialize last 30 days
@@ -713,7 +713,7 @@ export const mediaFunctions = (): string => `
     
     try {
       // Group media by user
-      const userStorage: Record<string, { count: number; size: number }> = {};
+      const userStorage:  = {};
       
       currentMedia.forEach(media => {
         if (!userStorage[media.user_id]) {
@@ -760,12 +760,12 @@ export const mediaFunctions = (): string => `
     }
   }
   
-  function filterByUser(userId: string) {
+  function filterByUser(userId) {
     document.getElementById('mediaSearch').value = userId;
     filterMedia();
   }
   
-  async function quarantineMedia(mediaId: string) {
+  async function quarantineMedia(mediaId) {
     confirmAction(
       'Quarantine Media',
       'Move this file to quarantine? It will not be accessible to users.',
@@ -781,7 +781,7 @@ export const mediaFunctions = (): string => `
     );
   }
   
-  async function unquarantineMedia(mediaId: string) {
+  async function unquarantineMedia(mediaId) {
     confirmAction(
       'Release from Quarantine',
       'Make this file available to users again?',
@@ -797,7 +797,7 @@ export const mediaFunctions = (): string => `
     );
   }
   
-  async function deleteMedia(mediaId: string) {
+  async function deleteMedia(mediaId) {
     confirmAction(
       'Delete Media',
       'Permanently delete this file? This cannot be undone.',
@@ -813,7 +813,7 @@ export const mediaFunctions = (): string => `
     );
   }
   
-  function viewMediaDetails(mediaId: string) {
+  function viewMediaDetails(mediaId) {
     // This would open a modal with media details
     const media = currentMedia.find(m => m.media_id === mediaId);
     if (media) {
@@ -830,7 +830,7 @@ export const mediaFunctions = (): string => `
     }
   }
   
-  function downloadMedia(mediaId: string) {
+  function downloadMedia(mediaId) {
     window.open(\`/_matrix/media/v3/download/\${mediaId}\`, '_blank');
   }
   
@@ -877,7 +877,7 @@ export const mediaFunctions = (): string => `
     }
   }
   
-  function showUploadProgress(filename: string) {
+  function showUploadProgress(filename) {
     const progressEl = document.getElementById('uploadProgress');
     if (progressEl) {
       progressEl.classList.add('visible');

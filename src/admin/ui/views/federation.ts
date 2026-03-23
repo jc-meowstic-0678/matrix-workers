@@ -469,7 +469,7 @@ export const federationFunctions = (): string => `
     }
   }
   
-  async function checkWellKnownEndpoints(serverName: string) {
+  async function checkWellKnownEndpoints(serverName) {
     // Check .well-known/matrix/server
     try {
       const serverResp = await fetch(\`https://\${serverName}/.well-known/matrix/server\`);
@@ -524,7 +524,7 @@ export const federationFunctions = (): string => `
     }
   }
   
-  async function checkKeyEndpoints(serverName: string) {
+  async function checkKeyEndpoints(serverName) {
     // Check /_matrix/key/v2/server
     try {
       const keyResp = await fetch(\`https://\${serverName}/_matrix/key/v2/server\`);
@@ -574,7 +574,7 @@ export const federationFunctions = (): string => `
       
       let passedCount = 0;
       
-      results.tests.forEach((test: any) => {
+      results.tests.forEach((test) => {
         const passed = test.passed;
         if (passed) passedCount++;
         
@@ -607,7 +607,7 @@ export const federationFunctions = (): string => `
     }
   }
   
-  function showTestDetails(testName: string) {
+  function showTestDetails(testName) {
     // This would show more details about the test
     // For now, just a placeholder
     showNotification(\`Details for \${testName} would be shown here\`, 'info');
@@ -636,7 +636,7 @@ export const federationFunctions = (): string => `
       let filteredServers = currentServers;
       if (search) {
         const searchLower = search.toLowerCase();
-        filteredServers = currentServers.filter((s: any) => 
+        filteredServers = currentServers.filter((s) => 
           s.server_name.toLowerCase().includes(searchLower)
         );
       }
@@ -659,7 +659,7 @@ export const federationFunctions = (): string => `
       const tbody = document.getElementById('serversList');
       tbody.innerHTML = '';
       
-      paginatedServers.forEach((server: any) => {
+      paginatedServers.forEach((server) => {
         const lastSeen = server.last_successful_fetch ? new Date(server.last_successful_fetch).toLocaleString() : 'Never';
         const retryCount = server.retry_count || 0;
         const status = getServerStatus(server);
@@ -704,7 +704,7 @@ export const federationFunctions = (): string => `
     }
   }
   
-  function getServerStatus(server: any): { class: string; text: string } {
+  function getServerStatus(server) {
     if (!server.last_successful_fetch) {
       return { class: 'offline', text: 'Never connected' };
     }
@@ -722,7 +722,7 @@ export const federationFunctions = (): string => `
     }
   }
   
-  function sortServersArray(servers: any[], field: string, direction: string): any[] {
+  function sortServersArray(servers: any[], field: string, direction): any[] {
     return [...servers].sort((a, b) => {
       let aVal, bVal;
       
@@ -751,7 +751,7 @@ export const federationFunctions = (): string => `
     });
   }
   
-  function sortServers(field: string) {
+  function sortServers(field) {
     if (serverSortField === field) {
       serverSortDirection = serverSortDirection === 'asc' ? 'desc' : 'asc';
     } else {
@@ -778,7 +778,7 @@ export const federationFunctions = (): string => `
     }, 300);
   }
   
-  async function testServerConnection(serverName: string) {
+  async function testServerConnection(serverName) {
     showNotification(\`Testing connection to \${serverName}...\`, 'info');
     
     try {
@@ -795,7 +795,7 @@ export const federationFunctions = (): string => `
     }
   }
   
-  function viewServerDetails(serverName: string) {
+  function viewServerDetails(serverName) {
     // This would show a modal with server details
     // For now, just log
     console.log('View details for:', serverName);
@@ -820,7 +820,7 @@ export const federationFunctions = (): string => `
     runFederationTests();
   }
   
-  function copyToClipboard(text: string) {
+  function copyToClipboard(text) {
     navigator.clipboard.writeText(text);
     showNotification('Copied to clipboard', 'success');
   }

@@ -278,7 +278,7 @@ export const settingsFunctions = (): string => `
     }
   }
   
-  function formatFeatureName(feature: string): string {
+  function formatFeatureName(feature): string {
     return feature
       .split('_')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))

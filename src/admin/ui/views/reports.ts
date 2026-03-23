@@ -574,7 +574,7 @@ export const reportsFunctions = (): string => `
       const tbody = document.getElementById('reportsList');
       tbody.innerHTML = '';
       
-      paginatedReports.forEach((report: any) => {
+      paginatedReports.forEach((report) => {
         const tr = document.createElement('tr');
         tr.innerHTML = \`
           <td>\${report.id}</td>
@@ -630,7 +630,7 @@ export const reportsFunctions = (): string => `
       let totalTime = 0;
       let count = 0;
       
-      resolvedReports.items?.forEach((report: any) => {
+      resolvedReports.items?.forEach((report) => {
         if (report.resolved_at && report.created_at) {
           totalTime += report.resolved_at - report.created_at;
           count++;
@@ -645,7 +645,7 @@ export const reportsFunctions = (): string => `
     }
   }
   
-  function getReportTarget(report: any): string {
+  function getReportTarget(report) {
     switch(report.report_type) {
       case 'user':
         return report.reported_user_id || '-';
@@ -658,19 +658,19 @@ export const reportsFunctions = (): string => `
     }
   }
   
-  function getScoreClass(score: number): string {
+  function getScoreClass(score): string {
     if (score <= -90) return 'score-critical';
     if (score <= -70) return 'score-high';
     if (score <= -40) return 'score-medium';
     return 'score-low';
   }
   
-  function truncateString(str: string, length: number): string {
+  function truncateString(str, length): string {
     if (!str) return '-';
     return str.length > length ? str.substring(0, length) + '...' : str;
   }
   
-  function filterReportItems(items: any[]): any[] {
+  function filterReportItems(items): any[] {
     return items.filter(item => {
       // Type filter
       if (reportsTypeFilter !== 'all' && item.report_type !== reportsTypeFilter) {
@@ -716,7 +716,7 @@ export const reportsFunctions = (): string => `
     }, 300);
   }
   
-  function sortReportsArray(reports: any[], field: string, direction: string): any[] {
+  function sortReportsArray(reports: any[], field: string, direction): any[] {
     return [...reports].sort((a, b) => {
       let aVal, bVal;
       
@@ -757,7 +757,7 @@ export const reportsFunctions = (): string => `
     });
   }
   
-  function sortReports(field: string) {
+  function sortReports(field) {
     if (reportsSortField === field) {
       reportsSortDirection = reportsSortDirection === 'asc' ? 'desc' : 'asc';
     } else {
@@ -775,7 +775,7 @@ export const reportsFunctions = (): string => `
     loadReports(0);
   }
   
-  function renderReportsPagination(currentPage: number, totalPages: number) {
+  function renderReportsPagination(currentPage: number, totalPages) {
     const paginationEl = document.getElementById('reportsPagination');
     paginationEl.innerHTML = '';
     
@@ -889,8 +889,8 @@ export const reportsFunctions = (): string => `
     }
   }
   
-  function countByType(items: any[], field: string): Record<string, number> {
-    const counts: Record<string, number> = {};
+  function countByType(items: any[], field):  {
+    const counts:  = {};
     items.forEach(item => {
       const key = item[field] || 'unknown';
       counts[key] = (counts[key] || 0) + 1;
@@ -948,7 +948,7 @@ export const reportsFunctions = (): string => `
     
     try {
       // Aggregate reports by target user
-      const userStats: Record<string, { count: number; totalScore: number; lastReport: number }> = {};
+      const userStats:  = {};
       
       currentReports.forEach(report => {
         if (report.reported_user_id) {
@@ -1005,7 +1005,7 @@ export const reportsFunctions = (): string => `
     }
   }
   
-  async function viewReportDetails(reportId: string) {
+  async function viewReportDetails(reportId) {
     try {
       const report = await api.get('/reports/' + reportId);
       currentReportId = reportId;
@@ -1046,7 +1046,7 @@ export const reportsFunctions = (): string => `
     }
   }
   
-  async function resolveReport(reportId: string) {
+  async function resolveReport(reportId) {
     const note = prompt('Resolution note (optional):');
     
     try {
@@ -1062,7 +1062,7 @@ export const reportsFunctions = (): string => `
     }
   }
   
-  async function unresolveReport(reportId: string) {
+  async function unresolveReport(reportId) {
     confirmAction(
       'Reopen Report',
       'Are you sure you want to reopen this report?',
@@ -1101,19 +1101,19 @@ export const reportsFunctions = (): string => `
     }
   }
   
-  function viewReportedContent(reportId: string) {
+  function viewReportedContent(reportId) {
     const report = currentReports.find(r => r.id == reportId);
     if (report) {
       viewReportDetails(reportId);
     }
   }
   
-  function filterByUser(userId: string) {
+  function filterByUser(userId) {
     document.getElementById('reportSearch').value = userId;
     filterReports();
   }
   
-  function blockUser(userId: string) {
+  function blockUser(userId) {
     confirmAction(
       'Block User',
       \`Block user \${userId}? They will not be able to interact with the server.\`,

@@ -748,7 +748,7 @@ export const roomsFunctions = (): string => `
       const tbody = document.getElementById('roomsList');
       tbody.innerHTML = '';
       
-      paginatedRooms.forEach((room: any) => {
+      paginatedRooms.forEach((room) => {
         const tr = document.createElement('tr');
         tr.innerHTML = \`
           <td>\${room.name || '<em>Unnamed</em>'}</td>
@@ -814,12 +814,12 @@ export const roomsFunctions = (): string => `
     }
   }
   
-  function truncateString(str: string, length: number): string {
+  function truncateString(str, length) {
     if (!str) return '-';
     return str.length > length ? str.substring(0, length) + '...' : str;
   }
   
-  function filterRoomItems(items: any[]): any[] {
+  function filterRoomItems(items) {
     return items.filter(item => {
       // Visibility filter
       if (roomsVisibilityFilter !== 'all') {
@@ -864,7 +864,7 @@ export const roomsFunctions = (): string => `
     }, 300);
   }
   
-  function sortRoomsArray(rooms: any[], field: string, direction: string): any[] {
+  function sortRoomsArray(rooms, field, direction) {
     return [...rooms].sort((a, b) => {
       let aVal, bVal;
       
@@ -901,7 +901,7 @@ export const roomsFunctions = (): string => `
     });
   }
   
-  function sortRooms(field: string) {
+  function sortRooms(field) {
     if (roomsSortField === field) {
       roomsSortDirection = roomsSortDirection === 'asc' ? 'desc' : 'asc';
     } else {
@@ -919,7 +919,7 @@ export const roomsFunctions = (): string => `
     loadRooms(0, document.getElementById('roomSearch')?.value || '');
   }
   
-  function renderRoomsPagination(currentPage: number, totalPages: number) {
+  function renderRoomsPagination(currentPage, totalPages) {
     const paginationEl = document.getElementById('roomsPagination');
     paginationEl.innerHTML = '';
     
@@ -953,7 +953,7 @@ export const roomsFunctions = (): string => `
   
   function updateRoomCharts() {
     // Rooms by version chart
-    const versionCounts: Record<string, number> = {};
+    const versionCounts = {};
     currentRooms.forEach(room => {
       const version = room.room_version || '10';
       versionCounts[version] = (versionCounts[version] || 0) + 1;
@@ -999,8 +999,8 @@ export const roomsFunctions = (): string => `
     const days = period === '7d' ? 7 : period === '30d' ? 30 : 90;
     const now = Date.now();
     
-    const dayLabels: string[] = [];
-    const dayCounts: number[] = [];
+    const dayLabels = [];
+    const dayCounts = [];
     
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date(now - i * 24 * 60 * 60 * 1000);
@@ -1090,7 +1090,7 @@ export const roomsFunctions = (): string => `
     }
   }
   
-  async function viewRoomDetails(roomId: string) {
+  async function viewRoomDetails(roomId) {
     try {
       const room = await api.get('/rooms/' + encodeURIComponent(roomId));
       currentRoomId = roomId;
@@ -1129,7 +1129,7 @@ export const roomsFunctions = (): string => `
     }
   }
   
-  async function loadRoomMembers(roomId: string) {
+  async function loadRoomMembers(roomId) {
     document.getElementById('membersLoading').style.display = 'block';
     document.getElementById('membersTable').style.display = 'none';
     
@@ -1152,7 +1152,7 @@ export const roomsFunctions = (): string => `
     const search = document.getElementById('memberSearch')?.value?.toLowerCase() || '';
     const roleFilter = document.getElementById('memberRoleFilter')?.value || 'all';
     
-    const filtered = currentRoomMembers.filter((member: any) => {
+    const filtered = currentRoomMembers.filter((member) => {
       // Search filter
       if (search && !member.user_id?.toLowerCase().includes(search)) {
         return false;
@@ -1173,7 +1173,7 @@ export const roomsFunctions = (): string => `
     const tbody = document.getElementById('membersList');
     tbody.innerHTML = '';
     
-    filtered.forEach((member: any) => {
+    filtered.forEach((member) => {
       const powerLevel = member.power_level || 0;
       const powerClass = powerLevel >= 100 ? 'power-admin' : powerLevel >= 50 ? 'power-moderator' : 'power-user';
       const membershipClass = \`membership-\${member.membership || 'join'}\`;
@@ -1193,7 +1193,7 @@ export const roomsFunctions = (): string => `
     });
   }
   
-  async function loadRoomState(roomId: string) {
+  async function loadRoomState(roomId) {
     document.getElementById('stateLoading').style.display = 'block';
     document.getElementById('stateTable').style.display = 'none';
     
@@ -1216,7 +1216,7 @@ export const roomsFunctions = (): string => `
     const search = document.getElementById('stateSearch')?.value?.toLowerCase() || '';
     const typeFilter = document.getElementById('stateTypeFilter')?.value || 'all';
     
-    const filtered = currentRoomState.filter((state: any) => {
+    const filtered = currentRoomState.filter((state) => {
       // Type filter
       if (typeFilter !== 'all' && state.type !== typeFilter) {
         return false;
@@ -1235,7 +1235,7 @@ export const roomsFunctions = (): string => `
     const tbody = document.getElementById('stateList');
     tbody.innerHTML = '';
     
-    filtered.forEach((state: any) => {
+    filtered.forEach((state) => {
       const content = typeof state.content === 'object' ? JSON.stringify(state.content).substring(0, 50) + '...' : state.content;
       
       const tr = document.createElement('tr');
@@ -1250,7 +1250,7 @@ export const roomsFunctions = (): string => `
     });
   }
   
-  async function loadRoomAliases(roomId: string) {
+  async function loadRoomAliases(roomId) {
     document.getElementById('aliasesLoading').style.display = 'block';
     document.getElementById('aliasesTable').style.display = 'none';
     
@@ -1261,7 +1261,7 @@ export const roomsFunctions = (): string => `
       const tbody = document.getElementById('aliasesList');
       tbody.innerHTML = '';
       
-      currentRoomAliases.forEach((alias: string) => {
+      currentRoomAliases.forEach((alias) => {
         const tr = document.createElement('tr');
         tr.innerHTML = \`
           <td>\${alias}</td>
@@ -1311,7 +1311,7 @@ export const roomsFunctions = (): string => `
     const search = document.getElementById('eventSearch')?.value?.toLowerCase() || '';
     const typeFilter = document.getElementById('eventTypeFilter')?.value || 'all';
     
-    const filtered = currentRoomEvents.filter((event: any) => {
+    const filtered = currentRoomEvents.filter((event) => {
       // Type filter
       if (typeFilter !== 'all' && event.type !== typeFilter) {
         return false;
@@ -1329,7 +1329,7 @@ export const roomsFunctions = (): string => `
     const tbody = document.getElementById('eventsList');
     tbody.innerHTML = '';
     
-    filtered.forEach((event: any) => {
+    filtered.forEach((event) => {
       const content = typeof event.content === 'object' ? JSON.stringify(event.content).substring(0, 50) + '...' : event.content;
       
       const tr = document.createElement('tr');
@@ -1348,7 +1348,7 @@ export const roomsFunctions = (): string => `
     });
   }
   
-  function switchRoomTab(tab: string) {
+  function switchRoomTab(tab) {
     currentRoomTab = tab;
     
     // Update tab buttons
@@ -1369,13 +1369,13 @@ export const roomsFunctions = (): string => `
     }
   }
   
-  function showRoomMembers(roomId: string) {
+  function showRoomMembers(roomId) {
     viewRoomDetails(roomId).then(() => {
       switchRoomTab('members');
     });
   }
   
-  function showUpgradeRoom(roomId: string) {
+  function showUpgradeRoom(roomId) {
     confirmAction(
       'Upgrade Room',
       'Upgrade this room to the latest version? This may affect client compatibility.',
@@ -1393,7 +1393,7 @@ export const roomsFunctions = (): string => `
     );
   }
   
-  function showDeleteRoom(roomId: string) {
+  function showDeleteRoom(roomId) {
     confirmAction(
       'Delete Room',
       'Permanently delete this room? This cannot be undone.',
@@ -1430,7 +1430,7 @@ export const roomsFunctions = (): string => `
     }
   }
   
-  function deleteAlias(alias: string) {
+  function deleteAlias(alias) {
     confirmAction(
       'Delete Alias',
       \`Delete alias \${alias}?\`,
@@ -1441,7 +1441,7 @@ export const roomsFunctions = (): string => `
     );
   }
   
-  function kickUser(userId: string) {
+  function kickUser(userId) {
     confirmAction(
       'Kick User',
       \`Kick user \${userId} from the room?\`,
@@ -1452,7 +1452,7 @@ export const roomsFunctions = (): string => `
     );
   }
   
-  function banUser(userId: string) {
+  function banUser(userId) {
     confirmAction(
       'Ban User',
       \`Ban user \${userId} from the room?\`,
@@ -1463,12 +1463,12 @@ export const roomsFunctions = (): string => `
     );
   }
   
-  function viewEvent(eventId: string) {
+  function viewEvent(eventId) {
     // This would show event details
     showNotification('View event: ' + eventId, 'info');
   }
   
-  function redactEvent(eventId: string) {
+  function redactEvent(eventId) {
     confirmAction(
       'Redact Event',
       'Remove this event from the room?',

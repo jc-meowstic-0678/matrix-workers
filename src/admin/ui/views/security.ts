@@ -718,7 +718,7 @@ export const securityFunctions = (): string => `
       
       // Get unique users count
       const uniqueUsers = new Set();
-      data.sessions?.forEach((s: any) => uniqueUsers.add(s.user_id));
+      data.sessions?.forEach((s) => uniqueUsers.add(s.user_id));
       document.getElementById('uniqueUsersCount').textContent = uniqueUsers.size || '0';
       
       currentSessions = data.sessions || [];
@@ -744,7 +744,7 @@ export const securityFunctions = (): string => `
       const tbody = document.getElementById('sessionsList');
       tbody.innerHTML = '';
       
-      paginatedSessions.forEach((session: any) => {
+      paginatedSessions.forEach((session) => {
         const status = getSessionStatus(session);
         const statusClass = status === 'Active' ? 'active' : status === 'Idle' ? 'idle' : 'stale';
         
@@ -776,7 +776,7 @@ export const securityFunctions = (): string => `
     }
   }
   
-  function getSessionStatus(session: any): string {
+  function getSessionStatus(session) {
     if (!session.last_seen_ts) return 'Active';
     
     const now = Date.now();
@@ -788,7 +788,7 @@ export const securityFunctions = (): string => `
     return 'Stale';
   }
   
-  function filterSessionsItems(items: any[]): any[] {
+  function filterSessionsItems(items): any[] {
     const search = document.getElementById('sessionSearch')?.value?.toLowerCase() || '';
     const statusFilter = document.getElementById('sessionStatusFilter')?.value || 'all';
     
@@ -822,7 +822,7 @@ export const securityFunctions = (): string => `
     }, 300);
   }
   
-  function sortSessionsArray(sessions: any[], field: string, direction: string): any[] {
+  function sortSessionsArray(sessions: any[], field: string, direction): any[] {
     return [...sessions].sort((a, b) => {
       let aVal, bVal;
       
@@ -859,7 +859,7 @@ export const securityFunctions = (): string => `
     });
   }
   
-  function sortSessions(field: string) {
+  function sortSessions(field) {
     if (sessionsSortField === field) {
       sessionsSortDirection = sessionsSortDirection === 'asc' ? 'desc' : 'asc';
     } else {
@@ -877,7 +877,7 @@ export const securityFunctions = (): string => `
     loadSessions(0);
   }
   
-  function renderSessionsPagination(currentPage: number, totalPages: number) {
+  function renderSessionsPagination(currentPage: number, totalPages) {
     const paginationEl = document.getElementById('sessionsPagination');
     paginationEl.innerHTML = '';
     
@@ -948,7 +948,7 @@ export const securityFunctions = (): string => `
       const tbody = document.getElementById('eventsList');
       tbody.innerHTML = '';
       
-      events.forEach((event: any) => {
+      events.forEach((event) => {
         const eventClass = getEventClass(event.type);
         
         const tr = document.createElement('tr');
@@ -979,7 +979,7 @@ export const securityFunctions = (): string => `
     }
   }
   
-  function getEventClass(type: string): string {
+  function getEventClass(type): string {
     switch(type) {
       case 'login': return 'event-login';
       case 'failed_login': return 'event-failed';
@@ -990,7 +990,7 @@ export const securityFunctions = (): string => `
     }
   }
   
-  function generateMockSecurityEvents(type: string): any[] {
+  function generateMockSecurityEvents(type): any[] {
     const events = [];
     const now = Date.now();
     const types = ['login', 'failed_login', 'rate_limit', 'token_refresh', 'logout'];
@@ -1116,7 +1116,7 @@ export const securityFunctions = (): string => `
     }
   }
   
-  async function checkSecretSet(secretName: string): Promise<boolean> {
+  async function checkSecretSet(secretName): Promise<boolean> {
     // This would check if the secret is set in the environment
     // For now, return false to show warnings
     return false;
@@ -1128,7 +1128,7 @@ export const securityFunctions = (): string => `
     return false;
   }
   
-  async function viewSessionDetails(sessionId: string) {
+  async function viewSessionDetails(sessionId) {
     try {
       const session = currentSessions.find(s => s.id === sessionId);
       if (!session) return;
@@ -1154,7 +1154,7 @@ export const securityFunctions = (): string => `
     }
   }
   
-  async function revokeSession(sessionId?: string) {
+  async function revokeSession(sessionId?) {
     const id = sessionId || currentSessions.find(s => s.id === sessionId)?.id;
     if (!id) return;
     
@@ -1185,7 +1185,7 @@ export const securityFunctions = (): string => `
     );
   }
   
-  function editRateLimit(type: string) {
+  function editRateLimit(type) {
     const currentLimit = document.getElementById(type + 'RateLimit')?.textContent || '10/min';
     const newLimit = prompt('Enter new rate limit (e.g., 100/min, 50/10s):', currentLimit);
     
@@ -1195,7 +1195,7 @@ export const securityFunctions = (): string => `
     }
   }
   
-  function resetRateLimit(type: string) {
+  function resetRateLimit(type) {
     confirmAction(
       'Reset Rate Limit',
       'Reset to default value?',
@@ -1206,7 +1206,7 @@ export const securityFunctions = (): string => `
     );
   }
   
-  function showSetSecretModal(secretName: string) {
+  function showSetSecretModal(secretName) {
     currentSecretName = secretName;
     document.getElementById('secretNameLabel').textContent = 'Secret: ' + secretName;
     document.getElementById('secretName').value = secretName;

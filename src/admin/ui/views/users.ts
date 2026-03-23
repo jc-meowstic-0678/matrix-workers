@@ -878,7 +878,7 @@ export const usersFunctions = (): string => `
       const tbody = document.getElementById('usersList');
       tbody.innerHTML = '';
       
-      paginatedUsers.forEach((user: any) => {
+      paginatedUsers.forEach((user) => {
         const roleClass = user.admin ? 'role-admin' : 'role-user';
         const roleText = user.admin ? 'Admin' : 'User';
         const statusClass = user.is_deactivated ? 'status-deactivated' : (user.is_guest ? 'status-guest' : 'status-active');
@@ -950,12 +950,12 @@ export const usersFunctions = (): string => `
     }
   }
   
-  function truncateString(str: string, length: number): string {
+  function truncateString(str, length) {
     if (!str) return '-';
     return str.length > length ? str.substring(0, length) + '...' : str;
   }
   
-  function filterUserItems(items: any[]): any[] {
+  function filterUserItems(items) {
     const roleFilter = document.getElementById('userRoleFilter')?.value || 'all';
     const statusFilter = document.getElementById('userStatusFilter')?.value || 'all';
     const search = document.getElementById('userSearch')?.value?.toLowerCase() || '';
@@ -996,7 +996,7 @@ export const usersFunctions = (): string => `
     }, 300);
   }
   
-  function sortUsersArray(users: any[], field: string, direction: string): any[] {
+  function sortUsersArray(users, field, direction) {
     return [...users].sort((a, b) => {
       let aVal, bVal;
       
@@ -1029,7 +1029,7 @@ export const usersFunctions = (): string => `
     });
   }
   
-  function sortUsers(field: string) {
+  function sortUsers(field) {
     if (usersSortField === field) {
       usersSortDirection = usersSortDirection === 'asc' ? 'desc' : 'asc';
     } else {
@@ -1047,7 +1047,7 @@ export const usersFunctions = (): string => `
     loadUsers(0, document.getElementById('userSearch')?.value || '');
   }
   
-  function renderUsersPagination(currentPage: number, totalPages: number) {
+  function renderUsersPagination(currentPage, totalPages) {
     const paginationEl = document.getElementById('usersPagination');
     paginationEl.innerHTML = '';
     
@@ -1085,8 +1085,8 @@ export const usersFunctions = (): string => `
     const days = period === '7d' ? 7 : period === '30d' ? 30 : 90;
     const now = Date.now();
     
-    const dayLabels: string[] = [];
-    const dayCounts: number[] = [];
+    const dayLabels = [];
+    const dayCounts = [];
     
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date(now - i * 24 * 60 * 60 * 1000);
@@ -1218,7 +1218,7 @@ export const usersFunctions = (): string => `
     }
   }
   
-  async function viewUserDetails(userId: string) {
+  async function viewUserDetails(userId) {
     try {
       const user = await api.get('/users/' + encodeURIComponent(userId));
       currentUserId = userId;
@@ -1265,7 +1265,7 @@ export const usersFunctions = (): string => `
     }
   }
   
-  async function loadUserDevices(userId: string) {
+  async function loadUserDevices(userId) {
     document.getElementById('devicesLoading').style.display = 'block';
     document.getElementById('devicesTable').style.display = 'none';
     
@@ -1277,7 +1277,7 @@ export const usersFunctions = (): string => `
       const tbody = document.getElementById('devicesList');
       tbody.innerHTML = '';
       
-      devices.forEach((device: any) => {
+      devices.forEach((device) => {
         const tr = document.createElement('tr');
         tr.innerHTML = \`
           <td>\${device.device_id}</td>
@@ -1300,7 +1300,7 @@ export const usersFunctions = (): string => `
     }
   }
   
-  async function loadUserSessions(userId: string) {
+  async function loadUserSessions(userId) {
     document.getElementById('sessionsLoading').style.display = 'block';
     document.getElementById('sessionsTable').style.display = 'none';
     
@@ -1312,7 +1312,7 @@ export const usersFunctions = (): string => `
       const tbody = document.getElementById('sessionsList');
       tbody.innerHTML = '';
       
-      sessions.forEach((session: any) => {
+      sessions.forEach((session) => {
         const tr = document.createElement('tr');
         tr.innerHTML = \`
           <td>\${truncateString(session.id, 16)}</td>
@@ -1336,7 +1336,7 @@ export const usersFunctions = (): string => `
     }
   }
   
-  async function loadUserRooms(userId: string) {
+  async function loadUserRooms(userId) {
     document.getElementById('roomsLoading').style.display = 'block';
     document.getElementById('roomsTable').style.display = 'none';
     
@@ -1359,7 +1359,7 @@ export const usersFunctions = (): string => `
   function filterUserRooms() {
     const filter = document.getElementById('roomMembershipFilter')?.value || 'all';
     
-    const filtered = currentUserRooms.filter((room: any) => {
+    const filtered = currentUserRooms.filter((room) => {
       if (filter === 'all') return true;
       return room.membership === filter;
     });
@@ -1367,7 +1367,7 @@ export const usersFunctions = (): string => `
     const tbody = document.getElementById('roomsList');
     tbody.innerHTML = '';
     
-    filtered.forEach((room: any) => {
+    filtered.forEach((room) => {
       const tr = document.createElement('tr');
       tr.innerHTML = \`
         <td>\${truncateString(room.room_id, 30)}</td>
@@ -1383,7 +1383,7 @@ export const usersFunctions = (): string => `
     });
   }
   
-  async function loadUserE2EE(userId: string) {
+  async function loadUserE2EE(userId) {
     try {
       // This would come from a debug endpoint
       // For now, show placeholder
@@ -1397,7 +1397,7 @@ export const usersFunctions = (): string => `
     }
   }
   
-  function switchUserTab(tab: string) {
+  function switchUserTab(tab) {
     currentUserTab = tab;
     
     // Update tab buttons
@@ -1443,12 +1443,12 @@ export const usersFunctions = (): string => `
       hideModal('createUserModal');
       showNotification('User created successfully', 'success');
       refreshUsers();
-    } catch (err: any) {
+    } catch (err) {
       showError('createUserError', err.message || 'Failed to create user');
     }
   }
   
-  function showResetPasswordModal(userId: string) {
+  function showResetPasswordModal(userId) {
     currentUserId = userId;
     document.getElementById('newUserPassword').value = '';
     document.getElementById('confirmUserPassword').value = '';
@@ -1511,17 +1511,17 @@ export const usersFunctions = (): string => `
     );
   }
   
-  async function deactivateUser(userId: string) {
+  async function deactivateUser(userId) {
     currentUserId = userId;
     toggleUserDeactivation();
   }
   
-  async function reactivateUser(userId: string) {
+  async function reactivateUser(userId) {
     currentUserId = userId;
     toggleUserDeactivation();
   }
   
-  async function makeUserAdmin(userId?: string) {
+  async function makeUserAdmin(userId) {
     const targetUserId = userId || currentUserId;
     if (!targetUserId) return;
     
@@ -1551,7 +1551,7 @@ export const usersFunctions = (): string => `
     );
   }
   
-  function removeUserAdmin(userId: string) {
+  function removeUserAdmin(userId) {
     makeUserAdmin(userId);
   }
   
@@ -1575,7 +1575,7 @@ export const usersFunctions = (): string => `
     hideModal('addDeviceModal');
   }
   
-  async function deleteDevice(deviceId: string) {
+  async function deleteDevice(deviceId) {
     if (!currentUserId) return;
     
     confirmAction(
@@ -1588,7 +1588,7 @@ export const usersFunctions = (): string => `
     );
   }
   
-  async function revokeSession(sessionId: string) {
+  async function revokeSession(sessionId) {
     confirmAction(
       'Revoke Session',
       'Force logout this session?',
@@ -1624,12 +1624,12 @@ export const usersFunctions = (): string => `
     );
   }
   
-  function viewRoomDetails(roomId: string) {
+  function viewRoomDetails(roomId) {
     // This would switch to rooms view and show the room
     showNotification('View room: ' + roomId, 'info');
   }
   
-  function showError(elementId: string, message: string) {
+  function showError(elementId, message) {
     const el = document.getElementById(elementId);
     if (el) {
       el.textContent = message;
