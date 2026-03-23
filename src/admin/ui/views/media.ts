@@ -848,7 +848,7 @@ export const mediaFunctions = (): string => `
     input.click();
   }
   
-  async function uploadMedia(file: File) {
+  async function uploadMedia(file) {
     const formData = new FormData();
     formData.append('file', file);
     
