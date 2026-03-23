@@ -658,19 +658,19 @@ export const reportsFunctions = (): string => `
     }
   }
   
-  function getScoreClass(score): string {
+  function getScoreClass(score) {
     if (score <= -90) return 'score-critical';
     if (score <= -70) return 'score-high';
     if (score <= -40) return 'score-medium';
     return 'score-low';
   }
   
-  function truncateString(str, length): string {
+  function truncateString(str, length) {
     if (!str) return '-';
     return str.length > length ? str.substring(0, length) + '...' : str;
   }
   
-  function filterReportItems(items): any[] {
+  function filterReportItems(items) {
     return items.filter(item => {
       // Type filter
       if (reportsTypeFilter !== 'all' && item.report_type !== reportsTypeFilter) {
@@ -716,7 +716,7 @@ export const reportsFunctions = (): string => `
     }, 300);
   }
   
-  function sortReportsArray(reports: any[], field: string, direction): any[] {
+  function sortReportsArray(reports, field, direction) {
     return [...reports].sort((a, b) => {
       let aVal, bVal;
       
@@ -775,7 +775,7 @@ export const reportsFunctions = (): string => `
     loadReports(0);
   }
   
-  function renderReportsPagination(currentPage: number, totalPages) {
+  function renderReportsPagination(currentPage, totalPages) {
     const paginationEl = document.getElementById('reportsPagination');
     paginationEl.innerHTML = '';
     
@@ -807,7 +807,7 @@ export const reportsFunctions = (): string => `
     }
   }
   
-  function updateReportCharts(reports: any[]) {
+  function updateReportCharts(reports) {
     // Reports by type chart
     const typeCount = countByType(reports, 'report_type');
     const typeCtx = document.getElementById('reportsByTypeChart')?.getContext('2d');
@@ -889,8 +889,8 @@ export const reportsFunctions = (): string => `
     }
   }
   
-  function countByType(items: any[], field):  {
-    const counts:  = {};
+  function countByType(items, field) {
+    const counts = {};
     items.forEach(item => {
       const key = item[field] || 'unknown';
       counts[key] = (counts[key] || 0) + 1;
@@ -898,14 +898,14 @@ export const reportsFunctions = (): string => `
     return counts;
   }
   
-  function getTimelineData(reports: any[]): { labels: string[]; new: number[]; resolved: number[] } {
+  function getTimelineData(reports) {
     const now = Date.now();
     const period = document.getElementById('analyticsPeriod')?.value || '30d';
     const days = period === '7d' ? 7 : period === '30d' ? 30 : 90;
     
-    const dayLabels: string[] = [];
-    const newCounts: number[] = [];
-    const resolvedCounts: number[] = [];
+    const dayLabels = [];
+    const newCounts = [];
+    const resolvedCounts = [];
     
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date(now - i * 24 * 60 * 60 * 1000);

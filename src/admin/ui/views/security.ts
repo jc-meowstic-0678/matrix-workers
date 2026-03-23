@@ -788,7 +788,7 @@ export const securityFunctions = (): string => `
     return 'Stale';
   }
   
-  function filterSessionsItems(items): any[] {
+  function filterSessionsItems(items) {
     const search = document.getElementById('sessionSearch')?.value?.toLowerCase() || '';
     const statusFilter = document.getElementById('sessionStatusFilter')?.value || 'all';
     
@@ -822,7 +822,7 @@ export const securityFunctions = (): string => `
     }, 300);
   }
   
-  function sortSessionsArray(sessions: any[], field: string, direction): any[] {
+  function sortSessionsArray(sessions, field, direction) {
     return [...sessions].sort((a, b) => {
       let aVal, bVal;
       
@@ -877,7 +877,7 @@ export const securityFunctions = (): string => `
     loadSessions(0);
   }
   
-  function renderSessionsPagination(currentPage: number, totalPages) {
+  function renderSessionsPagination(currentPage, totalPages) {
     const paginationEl = document.getElementById('sessionsPagination');
     paginationEl.innerHTML = '';
     
@@ -979,7 +979,7 @@ export const securityFunctions = (): string => `
     }
   }
   
-  function getEventClass(type): string {
+  function getEventClass(type) {
     switch(type) {
       case 'login': return 'event-login';
       case 'failed_login': return 'event-failed';
@@ -990,7 +990,7 @@ export const securityFunctions = (): string => `
     }
   }
   
-  function generateMockSecurityEvents(type): any[] {
+  function generateMockSecurityEvents(type) {
     const events = [];
     const now = Date.now();
     const types = ['login', 'failed_login', 'rate_limit', 'token_refresh', 'logout'];

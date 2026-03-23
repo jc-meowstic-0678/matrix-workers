@@ -321,7 +321,7 @@ export const dashboardFunctions = (): string => `
     }
   }
   
-  function formatUptime(ms): string {
+  function formatUptime(ms) {
     const seconds = Math.floor(ms / 1000);
     const minutes = Math.floor(seconds / 60);
     const hours = Math.floor(minutes / 60);

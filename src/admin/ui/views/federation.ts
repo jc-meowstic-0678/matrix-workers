@@ -722,7 +722,7 @@ export const federationFunctions = (): string => `
     }
   }
   
-  function sortServersArray(servers: any[], field: string, direction): any[] {
+  function sortServersArray(servers, field, direction) {
     return [...servers].sort((a, b) => {
       let aVal, bVal;
       

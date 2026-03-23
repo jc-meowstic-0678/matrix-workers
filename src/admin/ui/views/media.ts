@@ -358,7 +358,7 @@ export const mediaFunctions = (): string => `
   let timelineChart;
   
   // File size formatter
-  const formatBytes = (bytes): string => {
+  const formatBytes = (bytes) => {
     if (bytes === 0) return '0 B';
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
@@ -463,8 +463,8 @@ export const mediaFunctions = (): string => `
     }
   }
   
-  function countMediaTypes(media: any[]):  {
-    const counts:  = {};
+  function countMediaTypes(media) {
+    const counts = {};
     media.forEach(item => {
       const type = item.content_type.split('/')[0];
       counts[type] = (counts[type] || 0) + 1;
@@ -472,7 +472,7 @@ export const mediaFunctions = (): string => `
     return counts;
   }
   
-  function filterMediaItems(items): any[] {
+  function filterMediaItems(items) {
     return items.filter(item => {
       // Type filter
       if (mediaTypeFilter !== 'all') {
@@ -511,7 +511,7 @@ export const mediaFunctions = (): string => `
     }, 300);
   }
   
-  function sortMediaArray(media: any[], field: string, direction): any[] {
+  function sortMediaArray(media, field, direction) {
     return [...media].sort((a, b) => {
       let aVal, bVal;
       
@@ -566,7 +566,7 @@ export const mediaFunctions = (): string => `
     loadMedia(0);
   }
   
-  function renderMediaPagination(currentPage: number, totalPages) {
+  function renderMediaPagination(currentPage, totalPages) {
     const paginationEl = document.getElementById('mediaPagination');
     paginationEl.innerHTML = '';
     
@@ -598,7 +598,7 @@ export const mediaFunctions = (): string => `
     }
   }
   
-  function updateMediaCharts(media: any[]) {
+  function updateMediaCharts(media) {
     // Media types pie chart
     const typeCount = countMediaTypes(media);
     const typeCtx = document.getElementById('mediaTypesChart')?.getContext('2d');
@@ -676,12 +676,12 @@ export const mediaFunctions = (): string => `
     }
   }
   
-  function getTimelineData(media: any[]): { labels: string[]; values: number[] } {
+  function getTimelineData(media) {
     const now = Date.now();
     const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
     
-    const dayCounts:  = {};
-    const labels: string[] = [];
+    const dayCounts = {};
+    const labels = [];
     
     // Initialize last 30 days
     for (let i = 29; i >= 0; i--) {
