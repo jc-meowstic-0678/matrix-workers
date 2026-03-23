@@ -6,10 +6,10 @@ export const loginComponent = (isAuthenticated: boolean): string => `
       <div class="logo">🔐</div>
       <h1>Admin Login</h1>
       <div id="loginError" class="error-message" style="display: none;"></div>
-      <form id="loginForm">
+      <form id="loginForm" method="POST" action="">
         <div class="form-group">
           <label for="password">Password</label>
-          <input type="password" id="password" name="password" required autofocus>
+          <input type="password" id="password" name="password" required autofocus autocomplete="current-password">
         </div>
         <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
       </form>
