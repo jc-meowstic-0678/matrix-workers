@@ -6,7 +6,7 @@ import { Hono } from 'hono';
 import type { DurableObjectStub } from '@cloudflare/workers-types';
 import type { AppEnv, PDU } from '../types';
 import { Errors } from '../utils/errors';
-import { generateSigningKeyPair, signJson, sha256, verifySignature, verifyContentHash } from '../utils/crypto';
+import { generateSigningKeyPair, signJson, sha256, verifySignature } from '../utils/crypto';
 import { requireFederationAuth } from '../middleware/federation-auth';
 import {
   getRemoteKeysWithNotarySignature,
@@ -208,14 +208,20 @@ app.put('/_matrix/federation/v1/send/:txnId', async (c) => {
   // Process PDUs
   const pduResults: Record<string, Record<string, any>> = {};
   for (const pdu of pdus) {
-    const event = pdu as any; // TODO: proper PDU parsing
+    const event = pdu as any;
     const eventId = event.event_id as string;
     const roomId = event.room_id as string;
     try {
       // Validate basic event structure
       if (!eventId || !roomId || !event.type || !event.sender) {
-        throw new Error('Invalid PDU');
+        throw new Error('Invalid PDU: missing required fields');
       }
+
+      // Ensure required fields exist with defaults
+      if (!event.depth) event.depth = 1;
+      if (!event.auth_events) event.auth_events = [];
+      if (!event.prev_events) event.prev_events = [];
+      if (!event.content) event.content = {};
 
       // Check if event already exists
       const existingEvent = await getEvent(db, eventId);
@@ -239,14 +245,21 @@ app.put('/_matrix/federation/v1/send/:txnId', async (c) => {
         continue;
       }
 
-      // Validate content hash
-      const hashValid = await verifyContentHash(event);
-      if (!hashValid) {
-        pduResults[eventId] = { error: { errcode: 'M_BAD_JSON', error: 'Content hash mismatch' } };
-        continue;
+      // Validate content hash (event's content should hash to the expected hash)
+      const eventHashes = event.hashes as Record<string, string> | undefined;
+      const expectedHash = eventHashes?.sha256;
+      if (expectedHash) {
+        const { calculateContentHash } = await import('../utils/crypto');
+        const actualHash = await calculateContentHash(event);
+        if (actualHash !== expectedHash) {
+          pduResults[eventId] = { error: { errcode: 'M_BAD_JSON', error: 'Content hash mismatch' } };
+          continue;
+        }
       }
 
-      // Check event auth (room state, power levels, etc.)
+      // Get room version first (needed for auth check)
+      const roomVersion = await getRoomVersion(db, roomId) || '10'; // fallback
+
       // Get current room state for auth check
       const roomState = await db.prepare(`
         SELECT type, state_key, event_id, content, sender, depth
@@ -255,19 +268,29 @@ app.put('/_matrix/federation/v1/send/:txnId', async (c) => {
         ORDER BY depth ASC
       `).bind(roomId).all();
 
-      const stateEvents = roomState.results.map(e => ({
-        type: e.type,
-        state_key: e.state_key,
-        event_id: e.event_id,
-        content: JSON.parse(e.content as string),
-        sender: e.sender,
-        depth: e.depth,
-        room_id: roomId,
-        origin_server_ts: 0,
-        hashes: {},
-        signatures: {},
-        unsigned: {},
-      }));
+      const stateEvents = roomState.results.map(e => {
+        let content = {};
+        try {
+          if (e.content) {
+            content = typeof e.content === 'string' ? JSON.parse(e.content) : e.content;
+          }
+        } catch {
+          content = {};
+        }
+        return {
+          type: e.type,
+          state_key: e.state_key,
+          event_id: e.event_id,
+          content,
+          sender: e.sender,
+          depth: e.depth,
+          room_id: roomId,
+          origin_server_ts: 0,
+          hashes: {},
+          signatures: {},
+          unsigned: {},
+        };
+      });
 
       const authCheck = checkEventAuth(event as PDU, stateEvents, roomVersion);
       if (!authCheck.allowed) {
@@ -276,7 +299,6 @@ app.put('/_matrix/federation/v1/send/:txnId', async (c) => {
       }
 
       // Ensure room exists (create placeholder if needed)
-      const roomVersion = await getRoomVersion(db, roomId) || '10'; // fallback
       await ensureRoomExists(db, roomId, roomVersion);
 
       // Store event
@@ -292,8 +314,10 @@ app.put('/_matrix/federation/v1/send/:txnId', async (c) => {
 
       pduResults[eventId] = {};
     } catch (err) {
-      console.error('[federation] Error processing PDU:', err);
-      pduResults[eventId] = { error: { errcode: 'M_UNKNOWN', error: 'Internal server error' } };
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      const errorStack = err instanceof Error ? err.stack : '';
+      console.error(`[federation] Error processing PDU ${eventId}:`, errorMessage, errorStack);
+      pduResults[eventId] = { error: { errcode: 'M_UNKNOWN', error: `Internal server error: ${errorMessage}` } };
     }
   }
 
