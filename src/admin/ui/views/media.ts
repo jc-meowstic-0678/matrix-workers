@@ -713,7 +713,7 @@ export const mediaFunctions = (): string => `
     
     try {
       // Group media by user
-      const userStorage:  = {};
+      const userStorage = {};
       
       currentMedia.forEach(media => {
         if (!userStorage[media.user_id]) {

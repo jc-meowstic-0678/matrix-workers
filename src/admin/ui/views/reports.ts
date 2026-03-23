@@ -948,7 +948,7 @@ export const reportsFunctions = (): string => `
     
     try {
       // Aggregate reports by target user
-      const userStats:  = {};
+      const userStats = {};
       
       currentReports.forEach(report => {
         if (report.reported_user_id) {
