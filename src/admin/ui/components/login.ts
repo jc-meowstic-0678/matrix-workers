@@ -6,13 +6,13 @@ export const loginComponent = (isAuthenticated: boolean): string => `
       <div class="logo">🔐</div>
       <h1>Admin Login</h1>
       <div id="loginError" class="error-message" style="display: none;"></div>
-      <form id="loginForm" onsubmit="handleLogin(event)">
+      <div id="loginForm">
         <div class="form-group">
           <label for="password">Password</label>
-          <input type="password" id="password" name="password" required autofocus autocomplete="current-password">
+          <input type="password" id="password" required autofocus autocomplete="current-password" onkeydown="if(event.key==='Enter')handleLogin()">
         </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
-      </form>
+        <button type="button" onclick="handleLogin()" class="btn btn-primary" style="width: 100%;">Login</button>
+      </div>
     </div>
   </div>
 `;

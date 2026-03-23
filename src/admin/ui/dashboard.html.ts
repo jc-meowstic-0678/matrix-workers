@@ -1016,8 +1016,7 @@ const notificationHelper = `
 
 const initialization = `
   // Global login handler for form
-  window.handleLogin = async function(e) {
-    e.preventDefault();
+  window.handleLogin = async function() {
     const passwordInput = document.getElementById('password');
     const password = passwordInput?.value;
     const errorDiv = document.getElementById('loginError');
