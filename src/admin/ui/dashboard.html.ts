@@ -4,6 +4,7 @@
 import { loginComponent, loginStyles } from './components/login';
 import { sidebarComponent } from './components/sidebar';
 import { allModals } from './components/modals';
+import { getLoginHandlerScript } from './components/login-handler';
 import { 
   dashboardView,
   dashboardStyles,
@@ -787,40 +788,7 @@ export const adminDashboardHtml = (serverName: string, isAuthenticated: boolean 
     // ============================================
     // Login Handler
     // ============================================
-    window.handleLogin = async function() {
-      var passwordInput = document.getElementById('password');
-      var password = passwordInput && passwordInput.value;
-      var errorDiv = document.getElementById('loginError');
-      
-      if (!password) {
-        if (errorDiv) {
-          errorDiv.textContent = 'Password required';
-          errorDiv.style.display = 'block';
-        }
-        return false;
-      }
-      
-      try {
-        var result = await api.login(password);
-        if (result.success) {
-          localStorage.setItem('adminToken', result.token);
-          document.getElementById('loginContainer').style.display = 'none';
-          document.getElementById('appContainer').classList.add('visible');
-          switchView('dashboard');
-        } else {
-          if (errorDiv) {
-            errorDiv.textContent = result.error || 'Login failed';
-            errorDiv.style.display = 'block';
-          }
-        }
-      } catch (err) {
-        if (errorDiv) {
-          errorDiv.textContent = 'Login failed: ' + (err.message || 'Unknown error');
-          errorDiv.style.display = 'block';
-        }
-      }
-      return false;
-    };
+    ${getLoginHandlerScript()}
 
     // ============================================
     // Initialization

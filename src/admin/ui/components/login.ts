@@ -9,9 +9,9 @@ export const loginComponent = (isAuthenticated: boolean): string => `
       <div id="loginForm">
         <div class="form-group">
           <label for="password">Password</label>
-          <input type="password" id="password" required autofocus autocomplete="current-password" onkeydown="if(event.key==='Enter')handleLogin()">
+          <input type="password" id="password" required autofocus autocomplete="current-password">
         </div>
-        <button type="button" onclick="handleLogin()" class="btn btn-primary" style="width: 100%;">Login</button>
+        <button type="button" id="loginButton" class="btn btn-primary" style="width: 100%;">Login</button>
       </div>
     </div>
   </div>
