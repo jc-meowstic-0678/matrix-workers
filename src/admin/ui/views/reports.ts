@@ -588,8 +588,8 @@ export const reportsFunctions = (): string => `
           <td class="action-group">
             <button class="btn-icon-sm" onclick="viewReportDetails('\${report.id}')" title="View details">👁️</button>
             \${!report.resolved ? 
-              '<button class="btn-icon-sm success" onclick="resolveReport(\'' + report.id + '\')" title="Resolve">✅</button>' : 
-              '<button class="btn-icon-sm warning" onclick="unresolveReport(\'' + report.id + '\')" title="Reopen">↩️</button>'
+              \`<button class="btn-icon-sm success" onclick="resolveReport('\${report.id}')" title="Resolve">✅</button>\` : 
+              \`<button class="btn-icon-sm warning" onclick="unresolveReport('\${report.id}')" title="Reopen">↩️</button>\`
             }
             <button class="btn-icon-sm" onclick="viewReportedContent('\${report.id}')" title="View content">📄</button>
           </td>

@@ -420,8 +420,8 @@ export const mediaFunctions = (): string => `
           <td><span class="quarantine-badge \${media.quarantined ? 'quarantined' : 'normal'}">\${media.quarantined ? 'Quarantined' : 'Normal'}</span></td>
           <td class="action-group">
             \${media.quarantined ? 
-              '<button class="btn-icon-sm" onclick="unquarantineMedia(\'' + media.media_id + '\')" title="Release from quarantine">🔓</button>' : 
-              '<button class="btn-icon-sm warning" onclick="quarantineMedia(\'' + media.media_id + '\')" title="Quarantine">⚠️</button>'
+              \`<button class="btn-icon-sm" onclick="unquarantineMedia('\${media.media_id}')" title="Release from quarantine">🔓</button>\` : 
+              \`<button class="btn-icon-sm warning" onclick="quarantineMedia('\${media.media_id}')" title="Quarantine">⚠️</button>\`
             }
             <button class="btn-icon-sm" onclick="viewMediaDetails('\${media.media_id}')" title="View details">👁️</button>
             <button class="btn-icon-sm" onclick="downloadMedia('\${media.media_id}')" title="Download">⬇️</button>
