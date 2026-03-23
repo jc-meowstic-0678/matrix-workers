@@ -753,6 +753,7 @@ export const adminDashboardHtml = (serverName: string, isAuthenticated: boolean 
   ${allModals()}
   
   <script>
+    console.log('Admin dashboard script starting');
     // ============================================
     // API Client
     // ============================================
