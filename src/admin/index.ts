@@ -16,15 +16,11 @@ import { adminDashboardHtml } from './ui/dashboard.html.js';
 // Create admin API router
 export const adminApi = new Hono<AppEnv>();
 
-// Public endpoints
+// Public endpoints (must be before protected middleware)
 adminApi.post('/api/login', handleAdminLogin);
 adminApi.get('/api/status', handleAdminStatus);
 
-// Protected endpoints
-adminApi.use('/api/*', requireAdminAuth);
-adminApi.post('/api/logout', handleAdminLogout);
-
-// Mount all API modules
+// Mount API modules first (they have their own auth)
 adminApi.route('/api', statsApi);
 adminApi.route('/api', usersApi);
 adminApi.route('/api', roomsApi);
@@ -33,6 +29,9 @@ adminApi.route('/api', mediaApi);
 adminApi.route('/api', reportsApi);
 adminApi.route('/api', securityApi);
 adminApi.route('/api', settingsApi);
+
+// Protected endpoints (after modules to avoid double-auth)
+adminApi.post('/api/logout', requireAdminAuth, handleAdminLogout);
 
 // Export dashboard HTML generator
 export { adminDashboardHtml };
