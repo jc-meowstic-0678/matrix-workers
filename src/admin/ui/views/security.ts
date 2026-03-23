@@ -1116,13 +1116,13 @@ export const securityFunctions = (): string => `
     }
   }
   
-  async function checkSecretSet(secretName): Promise<boolean> {
+  async function checkSecretSet(secretName) {
     // This would check if the secret is set in the environment
     // For now, return false to show warnings
     return false;
   }
   
-  async function checkTurnConfigured(): Promise<boolean> {
+  async function checkTurnConfigured() {
     // This would check if TURN is configured
     // For now, return false
     return false;
