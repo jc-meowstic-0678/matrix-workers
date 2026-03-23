@@ -11,6 +11,7 @@ import { requireFederationAuth } from '../middleware/federation-auth';
 import {
   getRemoteKeysWithNotarySignature,
   verifyRemoteSignature,
+  getServerSigningKey,
   type ServerKeyResponse,
 } from '../services/federation-keys';
 import { validateUrl } from '../utils/url-validator';
@@ -48,6 +49,46 @@ app.get('/_matrix/federation/v1/version', async (c) => {
       name: 'matrix-worker',
       version: c.env.SERVER_VERSION || '0.1.0',
     },
+  });
+});
+
+// ============================================
+// CRITICAL: Server keys endpoint (unauthenticated)
+// Required for federation trust establishment
+// ============================================
+
+// GET /_matrix/key/v2/server/:keyId - Get server signing keys
+// Note: Matrix spec defines /_matrix/key/v2/server (without :keyId)
+app.get('/_matrix/key/v2/server', async (c) => {
+  const db = c.env.DB;
+  const serverName = c.env.SERVER_NAME;
+
+  // Get the current signing key
+  const signingKey = await getServerSigningKey(db);
+
+  if (!signingKey) {
+    return c.json({
+      errcode: 'M_UNAUTHORIZED',
+      error: 'No signing key configured',
+    }, 500);
+  }
+
+  // Create public-only JWK (remove private key data)
+  const publicKeyJwk: JsonWebKey = {
+    kty: signingKey.privateKeyJwk.kty,
+    crv: signingKey.privateKeyJwk.crv,
+    x: signingKey.privateKeyJwk.x,
+  };
+
+  // Build response per Matrix spec
+  return c.json({
+    server_name: serverName,
+    verify_keys: {
+      [signingKey.keyId]: publicKeyJwk,
+    },
+    old_verify_keys: {},
+    signatures: {},
+    valid_until_ts: Date.now() + (7 * 24 * 60 * 60 * 1000), // 7 days
   });
 });
 
