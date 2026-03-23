@@ -1154,7 +1154,7 @@ export const securityFunctions = (): string => `
     }
   }
   
-  async function revokeSession(sessionId?) {
+  async function revokeSession(sessionId) {
     const id = sessionId || currentSessions.find(s => s.id === sessionId)?.id;
     if (!id) return;
     
