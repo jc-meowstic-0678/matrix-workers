@@ -1007,6 +1007,45 @@ const notificationHelper = `
 
 const initialization = `
   (async () => {
+    // Handle login form submission
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const passwordInput = document.getElementById('password');
+        const password = passwordInput?.value;
+        const errorDiv = document.getElementById('loginError');
+        
+        if (!password) {
+          if (errorDiv) {
+            errorDiv.textContent = 'Password required';
+            errorDiv.style.display = 'block';
+          }
+          return;
+        }
+        
+        try {
+          const result = await api.login(password);
+          if (result.success) {
+            localStorage.setItem('adminToken', result.token);
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('appContainer').classList.add('visible');
+            switchView('dashboard');
+          } else {
+            if (errorDiv) {
+              errorDiv.textContent = result.error || 'Login failed';
+              errorDiv.style.display = 'block';
+            }
+          }
+        } catch (err) {
+          if (errorDiv) {
+            errorDiv.textContent = 'Login failed: ' + (err.message || 'Unknown error');
+            errorDiv.style.display = 'block';
+          }
+        }
+      });
+    }
+
     const status = await api.checkAuth();
     if (status.authenticated) {
       document.getElementById('loginContainer').style.display = 'none';

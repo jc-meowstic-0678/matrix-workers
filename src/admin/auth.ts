@@ -11,6 +11,7 @@ import { verifyPassword } from '../utils/crypto';
 
 /**
  * Verify admin password against stored hash
+ * Supports both pre-hashed format ($pbkdf2-sha256$...) and plain text
  */
 async function verifyAdminPassword(password: string, env: Env): Promise<boolean> {
   const adminPasswordHash = env.ADMIN_PASSWORD_HASH;
@@ -18,7 +19,15 @@ async function verifyAdminPassword(password: string, env: Env): Promise<boolean>
     console.error('ADMIN_PASSWORD_HASH secret not set');
     return false;
   }
-  return verifyPassword(password, adminPasswordHash);
+
+  // Check if hash is in proper PBKDF2 format
+  if (adminPasswordHash.startsWith('$pbkdf2-sha256$')) {
+    return verifyPassword(password, adminPasswordHash);
+  }
+
+  // Plain text comparison (for development/testing)
+  console.warn('ADMIN_PASSWORD_HASH appears to be plain text - consider using hashed password');
+  return adminPasswordHash === password;
 }
 
 /**
