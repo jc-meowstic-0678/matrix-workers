@@ -63,33 +63,77 @@ app.get('/_matrix/key/v2/server', async (c) => {
   const db = c.env.DB;
   const serverName = c.env.SERVER_NAME;
 
-  // Get the current signing key
-  const signingKey = await getServerSigningKey(db);
+  try {
+    // Get the current signing key
+    const signingKey = await getServerSigningKey(db);
 
-  if (!signingKey) {
+    if (signingKey) {
+      // Create public-only JWK (remove private key data)
+      const publicKeyJwk: JsonWebKey = {
+        kty: signingKey.privateKeyJwk.kty,
+        crv: signingKey.privateKeyJwk.crv,
+        x: signingKey.privateKeyJwk.x,
+      };
+
+      return c.json({
+        server_name: serverName,
+        verify_keys: {
+          [signingKey.keyId]: publicKeyJwk,
+        },
+        old_verify_keys: {},
+        signatures: {},
+        valid_until_ts: Date.now() + (7 * 24 * 60 * 60 * 1000),
+      });
+    }
+
+    // Try to get any available key as fallback
+    console.error('[federation] No key_version=2 signing key found, trying fallback');
+    const anyKey = await db.prepare(
+      `SELECT key_id, private_key_jwk FROM server_keys WHERE is_current = 1 LIMIT 1`
+    ).first<{ key_id: string; private_key_jwk: string | null }>();
+
+    if (!anyKey || !anyKey.private_key_jwk) {
+      console.error('[federation] No signing key in database at all');
+      return c.json({
+        errcode: 'M_UNAUTHORIZED',
+        error: 'No signing key configured. Run key generation.',
+      }, 500);
+    }
+
+    // Try to parse the fallback key
+    let publicKeyJwk: JsonWebKey;
+    try {
+      const parsed = JSON.parse(anyKey.private_key_jwk);
+      publicKeyJwk = {
+        kty: parsed.kty,
+        crv: parsed.crv,
+        x: parsed.x,
+      };
+    } catch (parseErr) {
+      console.error('[federation] Failed to parse signing key:', parseErr);
+      return c.json({
+        errcode: 'M_UNAUTHORIZED',
+        error: 'Signing key is invalid',
+      }, 500);
+    }
+
     return c.json({
-      errcode: 'M_UNAUTHORIZED',
-      error: 'No signing key configured',
+      server_name: serverName,
+      verify_keys: {
+        [anyKey.key_id]: publicKeyJwk,
+      },
+      old_verify_keys: {},
+      signatures: {},
+      valid_until_ts: Date.now() + (7 * 24 * 60 * 60 * 1000),
+    });
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error('[federation] /keys/v2/server error:', errorMsg, err);
+    return c.json({
+      errcode: 'M_UNKNOWN',
+      error: `Internal error: ${errorMsg}`,
     }, 500);
   }
-
-  // Create public-only JWK (remove private key data)
-  const publicKeyJwk: JsonWebKey = {
-    kty: signingKey.privateKeyJwk.kty,
-    crv: signingKey.privateKeyJwk.crv,
-    x: signingKey.privateKeyJwk.x,
-  };
-
-  // Build response per Matrix spec
-  return c.json({
-    server_name: serverName,
-    verify_keys: {
-      [signingKey.keyId]: publicKeyJwk,
-    },
-    old_verify_keys: {},
-    signatures: {},
-    valid_until_ts: Date.now() + (7 * 24 * 60 * 60 * 1000), // 7 days
-  });
 });
 
 // ============================================
