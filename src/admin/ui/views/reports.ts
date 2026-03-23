@@ -989,8 +989,8 @@ export const reportsFunctions = (): string => `
           <td><span class="score-badge \${getScoreClass(user.avgScore)}">\${user.avgScore}</span></td>
           <td>\${new Date(user.lastReport).toLocaleDateString()}</td>
           <td>
-            <button class="btn-icon-sm" onclick="filterByUser('${user.userId}')" title="Show user's reports">👁️</button>
-            <button class="btn-icon-sm warning" onclick="blockUser('${user.userId}')" title="Block user">🚫</button>
+            <button class="btn-icon-sm" onclick="filterByUser('\${user.userId}')" title="Show user's reports">👁️</button>
+            <button class="btn-icon-sm warning" onclick="blockUser('\${user.userId}')" title="Block user">🚫</button>
           </td>
         \`;
         tbody.appendChild(tr);

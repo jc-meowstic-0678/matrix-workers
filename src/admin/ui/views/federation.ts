@@ -583,7 +583,7 @@ export const federationFunctions = (): string => `
           <td>\${test.name}</td>
           <td><span class="status-badge \${passed ? 'passed' : 'failed'}">\${passed ? 'PASSED' : 'FAILED'}</span></td>
           <td>\${test.message || '-'}</td>
-          <td><button class="btn-icon" onclick="showTestDetails('${test.name}')">ℹ️</button></td>
+          <td><button class="btn-icon" onclick="showTestDetails('\${test.name}')">ℹ️</button></td>
         \`;
         tbody.appendChild(tr);
       });
@@ -674,8 +674,8 @@ export const federationFunctions = (): string => `
             \${status.text}
           </td>
           <td>
-            <button class="btn-icon" onclick="testServerConnection('${server.server_name}')" title="Test connection">🔌</button>
-            <button class="btn-icon" onclick="viewServerDetails('${server.server_name}')" title="View details">📋</button>
+            <button class="btn-icon" onclick="testServerConnection('\${server.server_name}')" title="Test connection">🔌</button>
+            <button class="btn-icon" onclick="viewServerDetails('\${server.server_name}')" title="View details">📋</button>
           </td>
         \`;
         tbody.appendChild(tr);

@@ -893,13 +893,13 @@ export const usersFunctions = (): string => `
           <td><span class="status-badge \${statusClass}">\${statusText}</span></td>
           <td>\${new Date(user.created_at).toLocaleDateString()}</td>
           <td class="action-group">
-            <button class="btn-icon-sm" onclick="viewUserDetails('${user.user_id}')" title="View details">👁️</button>
-            <button class="btn-icon-sm warning" onclick="showResetPasswordModal('${user.user_id}')" title="Reset password">🔑</button>
-            ${!user.admin ? 
+            <button class="btn-icon-sm" onclick="viewUserDetails('\${user.user_id}')" title="View details">👁️</button>
+            <button class="btn-icon-sm warning" onclick="showResetPasswordModal('\${user.user_id}')" title="Reset password">🔑</button>
+            \${!user.admin ? 
               '<button class="btn-icon-sm success" onclick="makeUserAdmin(\'' + user.user_id + '\')" title="Make admin">⭐</button>' : 
               '<button class="btn-icon-sm" onclick="removeUserAdmin(\'' + user.user_id + '\')" title="Remove admin">⬇️</button>'
             }
-            ${user.is_deactivated ? 
+            \${user.is_deactivated ? 
               '<button class="btn-icon-sm success" onclick="reactivateUser(\'' + user.user_id + '\')" title="Reactivate">✅</button>' : 
               '<button class="btn-icon-sm danger" onclick="deactivateUser(\'' + user.user_id + '\')" title="Deactivate">⛔</button>'
             }
@@ -1203,7 +1203,7 @@ export const usersFunctions = (): string => `
           <td>\${user.rooms}</td>
           <td>\${new Date(user.last_active).toLocaleString()}</td>
           <td>
-            <button class="btn-icon-sm" onclick="viewUserDetails('${user.user_id}')">👁️</button>
+            <button class="btn-icon-sm" onclick="viewUserDetails('\${user.user_id}')">👁️</button>
           </td>
         \`;
         tbody.appendChild(tr);
@@ -1376,7 +1376,7 @@ export const usersFunctions = (): string => `
         <td>\${room.joined_at ? new Date(room.joined_at).toLocaleString() : '-'}</td>
         <td>\${room.power_level || 0}</td>
         <td>
-          <button class="btn-icon-sm" onclick="viewRoomDetails('${room.room_id}')">👁️</button>
+          <button class="btn-icon-sm" onclick="viewRoomDetails('\${room.room_id}')">👁️</button>
         </td>
       \`;
       tbody.appendChild(tr);
