@@ -840,7 +840,7 @@ export const mediaFunctions = (): string => `
     const input = document.createElement('input');
     input.type = 'file';
     input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
+      const file = e.target.files?.[0];
       if (file) {
         await uploadMedia(file);
       }
