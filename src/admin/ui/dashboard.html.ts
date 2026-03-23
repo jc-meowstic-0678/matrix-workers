@@ -917,10 +917,6 @@ const createApiClient = `
 const viewState = `
   let currentPage = { users: 0, rooms: 0, media: 0 };
   let searchTimeout;
-  let currentUsers = [];
-  let currentRooms = [];
-  let currentMedia = [];
-  let currentReports = [];
 
   function showError(elementId, message) {
     const el = document.getElementById(elementId);
