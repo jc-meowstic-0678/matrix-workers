@@ -247,7 +247,29 @@ app.put('/_matrix/federation/v1/send/:txnId', async (c) => {
       }
 
       // Check event auth (room state, power levels, etc.)
-      const authCheck = await checkEventAuth(db, event, origin);
+      // Get current room state for auth check
+      const roomState = await db.prepare(`
+        SELECT type, state_key, event_id, content, sender, depth
+        FROM events
+        WHERE room_id = ? AND state_key IS NOT NULL
+        ORDER BY depth ASC
+      `).bind(roomId).all();
+
+      const stateEvents = roomState.results.map(e => ({
+        type: e.type,
+        state_key: e.state_key,
+        event_id: e.event_id,
+        content: JSON.parse(e.content as string),
+        sender: e.sender,
+        depth: e.depth,
+        room_id: roomId,
+        origin_server_ts: 0,
+        hashes: {},
+        signatures: {},
+        unsigned: {},
+      }));
+
+      const authCheck = checkEventAuth(event as PDU, stateEvents, roomVersion);
       if (!authCheck.allowed) {
         pduResults[eventId] = { error: { errcode: authCheck.errcode || 'M_FORBIDDEN', error: authCheck.error } };
         continue;
