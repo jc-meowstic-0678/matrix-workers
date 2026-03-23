@@ -1053,58 +1053,8 @@ const notificationHelper = `
 `;
 
 const initialization = `
-  console.log('Initializing dashboard...');
-
-  // Global login handler for form
-  window.handleLogin = async function() {
-    console.log('handleLogin called');
-    const passwordInput = document.getElementById('password');
-    const password = passwordInput?.value;
-    const errorDiv = document.getElementById('loginError');
-    console.log('Password entered:', password ? 'yes' : 'no');
-    
-    if (!password) {
-      if (errorDiv) {
-        errorDiv.textContent = 'Password required';
-        errorDiv.style.display = 'block';
-      }
-      return false;
-    }
-    
-    try {
-      console.log('Calling api.login...');
-      const result = await api.login(password);
-      console.log('Login result:', result);
-      if (result.success) {
-        localStorage.setItem('adminToken', result.token);
-        document.getElementById('loginContainer').style.display = 'none';
-        document.getElementById('appContainer').classList.add('visible');
-        switchView('dashboard');
-      } else {
-        if (errorDiv) {
-          let errorText = result.error || 'Login failed';
-          if (result.status) {
-            errorText += ' (HTTP ' + result.status + ')';
-          }
-          errorDiv.textContent = errorText;
-          errorDiv.style.display = 'block';
-        }
-      }
-    } catch (err) {
-      console.error('Login error:', err);
-      if (errorDiv) {
-        errorDiv.textContent = 'Login failed: ' + (err.message || 'Unknown error');
-        errorDiv.style.display = 'block';
-      }
-    }
-    return false;
-  };
-  console.log('handleLogin function defined');
-
   (async () => {
-    console.log('Checking auth status...');
     const status = await api.checkAuth();
-    console.log('Auth status:', status);
     if (status.authenticated) {
       document.getElementById('loginContainer').style.display = 'none';
       document.getElementById('appContainer').classList.add('visible');
