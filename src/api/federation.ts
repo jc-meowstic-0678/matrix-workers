@@ -75,7 +75,7 @@ app.get('/_matrix/key/v2/server', async (c) => {
         x: signingKey.privateKeyJwk.x,
       };
 
-      return c.json({
+      const response = {
         server_name: serverName,
         verify_keys: {
           [signingKey.keyId]: publicKeyJwk,
@@ -83,7 +83,12 @@ app.get('/_matrix/key/v2/server', async (c) => {
         old_verify_keys: {},
         signatures: {},
         valid_until_ts: Date.now() + (7 * 24 * 60 * 60 * 1000),
-      });
+      };
+
+      // Sign the response with our Ed25519 key
+      const signedResponse = await signJson(response, serverName, signingKey.keyId, signingKey.privateKeyJwk);
+
+      return c.json(signedResponse);
     }
 
     // Try to get any available key as fallback
@@ -102,6 +107,7 @@ app.get('/_matrix/key/v2/server', async (c) => {
 
     // Try to parse the fallback key
     let publicKeyJwk: JsonWebKey;
+    let privateKeyJwk: JsonWebKey;
     try {
       const parsed = JSON.parse(anyKey.private_key_jwk);
       publicKeyJwk = {
@@ -109,6 +115,7 @@ app.get('/_matrix/key/v2/server', async (c) => {
         crv: parsed.crv,
         x: parsed.x,
       };
+      privateKeyJwk = parsed;
     } catch (parseErr) {
       console.error('[federation] Failed to parse signing key:', parseErr);
       return c.json({
@@ -117,7 +124,7 @@ app.get('/_matrix/key/v2/server', async (c) => {
       }, 500);
     }
 
-    return c.json({
+    const response = {
       server_name: serverName,
       verify_keys: {
         [anyKey.key_id]: publicKeyJwk,
@@ -125,7 +132,12 @@ app.get('/_matrix/key/v2/server', async (c) => {
       old_verify_keys: {},
       signatures: {},
       valid_until_ts: Date.now() + (7 * 24 * 60 * 60 * 1000),
-    });
+    };
+
+    // Sign the response with our Ed25519 key
+    const signedResponse = await signJson(response, serverName, anyKey.key_id, privateKeyJwk);
+
+    return c.json(signedResponse);
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     console.error('[federation] /keys/v2/server error:', errorMsg, err);
