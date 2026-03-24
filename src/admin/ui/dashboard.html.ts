@@ -970,7 +970,7 @@ const viewSwitcher = `
       case 'media': loadMedia(); break;
       case 'reports': loadReports(); break;
       case 'security': loadSecurityData(); break;
-      case 'settings': loadSettings(); break;
+      case 'settings': loadSettings(); loadFeatures(); break;
     }
   }
 
