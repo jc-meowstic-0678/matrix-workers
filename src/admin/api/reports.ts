@@ -1,10 +1,13 @@
 // Reports management endpoints
 
 import { Hono } from 'hono';
+import type { Env, Variables } from '../../types';
 import type { Report, PaginatedResponse } from '../types';
 import { requireAdminAuth } from '../auth';
 
-const reportsApi = new Hono();
+type AdminApiEnv = { Bindings: Env; Variables: Variables };
+
+const reportsApi = new Hono<AdminApiEnv>();
 
 // GET /api/reports - List reports
 reportsApi.get('/reports', requireAdminAuth, async (c) => {

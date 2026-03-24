@@ -1,10 +1,13 @@
 // Security and session management endpoints
 
 import { Hono } from 'hono';
+import type { Env, Variables } from '../../types';
 import { requireAdminAuth } from '../auth';
 import { generateSigningKeyPair } from '../../utils/crypto';
 
-const securityApi = new Hono();
+type AdminApiEnv = { Bindings: Env; Variables: Variables };
+
+const securityApi = new Hono<AdminApiEnv>();
 
 // GET /api/security/sessions - List active sessions
 securityApi.get('/security/sessions', requireAdminAuth, async (c) => {

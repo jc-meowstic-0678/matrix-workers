@@ -1,12 +1,15 @@
 // Room management endpoints
 
 import { Hono } from 'hono';
+import type { Env, Variables } from '../../types';
 import type { Room, PaginatedResponse, CreateRoomRequest } from '../types';
 import { requireAdminAuth } from '../auth';
 import { generateRoomId } from '../../utils/ids';
 import { createRoom, createRoomAlias } from '../../services/database';
 
-const roomsApi = new Hono();
+type AdminApiEnv = { Bindings: Env; Variables: Variables };
+
+const roomsApi = new Hono<AdminApiEnv>();
 
 // GET /api/rooms - List rooms
 roomsApi.get('/rooms', requireAdminAuth, async (c) => {

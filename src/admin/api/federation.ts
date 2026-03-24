@@ -1,10 +1,13 @@
 // Federation endpoints
 
 import { Hono } from 'hono';
+import type { Env, Variables } from '../../types';
 import type { FederationServer } from '../types';
 import { requireAdminAuth } from '../auth';
 
-const federationApi = new Hono();
+type AdminApiEnv = { Bindings: Env; Variables: Variables };
+
+const federationApi = new Hono<AdminApiEnv>();
 
 // GET /api/federation/status - Get federation status
 federationApi.get('/federation/status', requireAdminAuth, async (c) => {

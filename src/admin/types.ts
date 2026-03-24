@@ -1,13 +1,10 @@
 // Shared type definitions for admin module
 
-import type { Context } from 'hono';
-import type { Env } from '../types';
-
 // ============================================
 // API Types
 // ============================================
 
-export interface AdminContext {
+export interface AdminSession {
   userId: string;
   token: string;
 }
@@ -186,11 +183,6 @@ export interface AdminRequestContext {
   userId: string;
   isAdmin: boolean;
 }
-
-export type AdminContext = Context & {
-  get(key: 'userId'): string;
-  get(key: 'isAdmin'): boolean;
-};
 
 // ============================================
 // Constants

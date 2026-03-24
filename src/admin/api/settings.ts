@@ -1,9 +1,12 @@
 // Server settings endpoints
 
 import { Hono } from 'hono';
+import type { Env, Variables } from '../../types';
 import { requireAdminAuth } from '../auth';
 
-const settingsApi = new Hono();
+type AdminApiEnv = { Bindings: Env; Variables: Variables };
+
+const settingsApi = new Hono<AdminApiEnv>();
 
 // GET /api/settings - Get server settings
 settingsApi.get('/settings', requireAdminAuth, async (c) => {

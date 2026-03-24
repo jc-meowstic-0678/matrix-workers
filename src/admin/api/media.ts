@@ -1,10 +1,13 @@
 // Media management endpoints
 
 import { Hono } from 'hono';
+import type { Env, Variables } from '../../types';
 import type { Media, PaginatedResponse } from '../types';
 import { requireAdminAuth } from '../auth';
 
-const mediaApi = new Hono();
+type AdminApiEnv = { Bindings: Env; Variables: Variables };
+
+const mediaApi = new Hono<AdminApiEnv>();
 
 // GET /api/media - List media files
 mediaApi.get('/media', requireAdminAuth, async (c) => {

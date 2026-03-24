@@ -2,7 +2,7 @@
 
 import { Hono } from 'hono';
 import type { AppEnv } from '../types';
-import { handleAdminLogin, handleAdminLogout, handleAdminStatus, requireAdminAuth, optionalAdminAuth } from './auth';
+import { handleAdminLogin, handleAdminLogout, handleAdminStatus, requireAdminAuth } from './auth';
 import { statsApi } from './api/stats';
 import { usersApi } from './api/users';
 import { roomsApi } from './api/rooms';

@@ -1,12 +1,15 @@
 // User management endpoints
 
 import { Hono } from 'hono';
+import type { Env, Variables } from '../../types';
 import type { User, CreateUserRequest, UpdateUserRequest, ResetPasswordRequest, PaginatedResponse } from '../types';
 import { requireAdminAuth } from '../auth';
 import { hashPassword } from '../../utils/crypto';
 import { formatUserId } from '../../utils/ids';
 
-const usersApi = new Hono();
+type AdminApiEnv = { Bindings: Env; Variables: Variables };
+
+const usersApi = new Hono<AdminApiEnv>();
 
 // GET /api/users - List users
 usersApi.get('/users', requireAdminAuth, async (c) => {

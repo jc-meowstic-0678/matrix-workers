@@ -1,10 +1,13 @@
 // Statistics endpoints
 
 import { Hono } from 'hono';
+import type { Env, Variables } from '../../types';
 import type { ServerStats } from '../types';
 import { requireAdminAuth } from '../auth';
 
-const statsApi = new Hono();
+type AdminApiEnv = { Bindings: Env; Variables: Variables };
+
+const statsApi = new Hono<AdminApiEnv>();
 
 // GET /api/stats - Server statistics
 statsApi.get('/stats', requireAdminAuth, async (c) => {
