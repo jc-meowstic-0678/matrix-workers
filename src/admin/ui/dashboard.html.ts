@@ -974,6 +974,14 @@ const viewSwitcher = `
     }
   }
 
+  // Add click handlers to nav items
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const viewName = item.getAttribute('data-view');
+      if (viewName) switchView(viewName);
+    });
+  });
+
   // Keyboard shortcuts
   document.addEventListener('keydown', (e) => {
     if (e.metaKey || e.ctrlKey) {
