@@ -30,7 +30,7 @@ export const settingsView = (): string => `
         </div>
         <div class="setting-control">
           <label class="toggle-switch">
-            <input type="checkbox" id="registrationEnabled">
+            <input type="checkbox" id="registrationEnabled" onchange="toggleRegistration()">
             <span class="toggle-slider"></span>
           </label>
           <span class="status-badge disabled" id="registrationStatus">Disabled</span>
