@@ -1050,12 +1050,13 @@ export const securityFunctions = (): string => `
   
   async function loadSecurityRecommendations() {
     try {
-      // Check admin password hash
-      const adminHashSet = await checkSecretSet('ADMIN_PASSWORD_HASH');
-      const oidcKeySet = await checkSecretSet('OIDC_ENCRYPTION_KEY');
-      const turnConfigured = await checkTurnConfigured();
+      // Fetch secrets status from API
+      const secretsData = await api.get('/security/secrets-status');
+      const secrets = secretsData.secrets || {};
       
       const recommendationsList = document.getElementById('recommendationsList');
+      if (!recommendationsList) return;
+      
       recommendationsList.innerHTML = '';
       
       // Rate limiting (always enabled)
@@ -1070,55 +1071,63 @@ export const securityFunctions = (): string => `
       \`;
       
       // Admin password hash
-      if (!adminHashSet) {
-        recommendationsList.innerHTML += \`
-          <div class="recommendation-item warning">
-            <span class="recommendation-icon">⚠️</span>
-            <div class="recommendation-content">
-              <div class="recommendation-title">Admin password hash not set</div>
-              <div class="recommendation-desc">Set ADMIN_PASSWORD_HASH secret to secure the admin dashboard</div>
-            </div>
-            <button class="btn btn-sm btn-primary" onclick="showSetSecretModal('ADMIN_PASSWORD_HASH')">Fix</button>
-          </div>
-        \`;
-      } else {
+      if (secrets.admin_password_hash) {
         recommendationsList.innerHTML += \`
           <div class="recommendation-item">
             <span class="recommendation-icon">✅</span>
             <div class="recommendation-content">
-              <div class="recommendation-title">Admin password hash is set</div>
+              <div class="recommendation-title">Admin password is configured</div>
               <div class="recommendation-desc">Admin dashboard is secure</div>
+            </div>
+          </div>
+        \`;
+      } else {
+        recommendationsList.innerHTML += \`
+          <div class="recommendation-item warning">
+            <span class="recommendation-icon">⚠️</span>
+            <div class="recommendation-content">
+              <div class="recommendation-title">Admin password not configured</div>
+              <div class="recommendation-desc">Set ADMIN_PASSWORD_HASH secret via: npx wrangler secret put ADMIN_PASSWORD_HASH</div>
             </div>
           </div>
         \`;
       }
       
       // OIDC encryption key
-      if (!oidcKeySet) {
-        recommendationsList.innerHTML += \`
-          <div class="recommendation-item warning">
-            <span class="recommendation-icon">⚠️</span>
-            <div class="recommendation-content">
-              <div class="recommendation-title">OIDC encryption key not set</div>
-              <div class="recommendation-desc">Set OIDC_ENCRYPTION_KEY for secure OAuth client secret storage</div>
-            </div>
-            <button class="btn btn-sm btn-primary" onclick="showSetSecretModal('OIDC_ENCRYPTION_KEY')">Fix</button>
-          </div>
-        \`;
-      } else {
+      if (secrets.oidc_encryption_key) {
         recommendationsList.innerHTML += \`
           <div class="recommendation-item">
             <span class="recommendation-icon">✅</span>
             <div class="recommendation-content">
-              <div class="recommendation-title">OIDC encryption key is set</div>
+              <div class="recommendation-title">OIDC encryption key is configured</div>
               <div class="recommendation-desc">OAuth client secrets are encrypted</div>
+            </div>
+          </div>
+        \`;
+      } else {
+        recommendationsList.innerHTML += \`
+          <div class="recommendation-item warning">
+            <span class="recommendation-icon">⚠️</span>
+            <div class="recommendation-content">
+              <div class="recommendation-title">OIDC encryption key not configured</div>
+              <div class="recommendation-desc">Set OIDC_ENCRYPTION_KEY for secure OAuth client secret storage</div>
             </div>
           </div>
         \`;
       }
       
       // TURN configuration
-      if (!turnConfigured) {
+      if (secrets.turn_secret || secrets.turn_credentials_secret) {
+        recommendationsList.innerHTML += \`
+          <div class="recommendation-item">
+            <span class="recommendation-icon">✅</span>
+            <div class="recommendation-content">
+              <div class="recommendation-title">TURN server is configured</div>
+              <div class="recommendation-desc">VoIP calls will work through NAT</div>
+            </div>
+          </div>
+        \`;
+      } else {
         recommendationsList.innerHTML += \`
           <div class="recommendation-item info">
             <span class="recommendation-icon">ℹ️</span>
@@ -1126,36 +1135,17 @@ export const securityFunctions = (): string => `
               <div class="recommendation-title">TURN server not configured</div>
               <div class="recommendation-desc">Configure TURN for optimal VoIP connectivity</div>
             </div>
-            <button class="btn btn-sm btn-secondary" onclick="showConfigureTurnModal()">Configure</button>
-          </div>
-        \`;
-      } else {
-        recommendationsList.innerHTML += \`
-          <div class="recommendation-item">
-            <span class="recommendation-icon">✅</span>
-            <div class="recommendation-content">
-              <div class="recommendation-title">TURN server configured</div>
-              <div class="recommendation-desc">VoIP calls will work through NAT</div>
-            </div>
           </div>
         \`;
       }
       
     } catch (err) {
       console.error('Failed to load recommendations:', err);
+      const recommendationsList = document.getElementById('recommendationsList');
+      if (recommendationsList) {
+        recommendationsList.innerHTML = '<div class="recommendation-item warning"><span class="recommendation-icon">⚠️</span><div class="recommendation-content"><div class="recommendation-title">Failed to load security recommendations</div></div></div>';
+      }
     }
-  }
-  
-  async function checkSecretSet(secretName) {
-    // This would check if the secret is set in the environment
-    // For now, return false to show warnings
-    return false;
-  }
-  
-  async function checkTurnConfigured() {
-    // This would check if TURN is configured
-    // For now, return false
-    return false;
   }
   
   async function viewSessionDetails(sessionId) {

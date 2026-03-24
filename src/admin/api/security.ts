@@ -136,4 +136,22 @@ securityApi.get('/security/server-key', requireAdminAuth, async (c) => {
   });
 });
 
+// GET /api/security/secrets-status - Check which secrets are configured
+securityApi.get('/security/secrets-status', requireAdminAuth, async (c) => {
+  const env = c.env as Record<string, unknown>;
+  
+  return c.json({
+    secrets: {
+      admin_password_hash: !!env.ADMIN_PASSWORD_HASH,
+      oidc_encryption_key: !!env.OIDC_ENCRYPTION_KEY,
+      turn_secret: !!env.TURN_SECRET,
+      turn_credentials_secret: !!env.TURN_CREDENTIALS_SECRET,
+    },
+    server_config: {
+      registration_enabled: true, // Check from DB if needed
+      federation_enabled: true, // Always enabled
+    }
+  });
+});
+
 export { securityApi };
