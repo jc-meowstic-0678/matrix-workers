@@ -852,10 +852,10 @@ export const usersFunctions = (): string => `
       
       const data = await api.get(url);
       
-      // Update stats
-      await loadUserStats();
-      
       currentUsers = data.items || [];
+      
+      // Update stats (after currentUsers is populated)
+      await loadUserStats();
       
       // Apply filters
       let filteredUsers = filterUserItems(currentUsers);
