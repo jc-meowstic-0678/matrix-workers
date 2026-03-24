@@ -20,11 +20,7 @@ export const federationView = (): string => `
     <div class="stats-grid">
       <div class="stat-card" id="serverInfoCard">
         <div class="label">Server Name</div>
-        <div class="value" id="serverName">-</div>
-      </div>
-      <div class="stat-card" id="signingKeyCard">
-        <div class="label">Signing Key</div>
-        <div class="value" id="signingKeyId">-</div>
+        <div class="value server-name-value" id="serverName">-</div>
       </div>
       <div class="stat-card" id="knownServersCard">
         <div class="label">Known Servers</div>
@@ -445,6 +441,12 @@ export const federationStyles = `
     overflow-x: auto;
     word-break: break-all;
   }
+  
+  .server-name-value {
+    font-size: 14px;
+    word-break: break-all;
+    max-width: 100%;
+  }
 `;
 
 // Federation JavaScript functions
@@ -464,7 +466,6 @@ export const federationFunctions = (): string => `
       const status = await api.get('/federation/status');
       
       document.getElementById('serverName').textContent = status.server_name || '-';
-      document.getElementById('signingKeyId').textContent = status.signing_key_id || '-';
       document.getElementById('knownServers').textContent = status.known_servers_count || '0';
       document.getElementById('federationEnabled').innerHTML = status.federation_enabled ? '✅ Enabled' : '❌ Disabled';
       
