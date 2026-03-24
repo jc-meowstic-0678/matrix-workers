@@ -386,6 +386,39 @@ export const roomsView = (): string => `
         </div>
       </div>
     </div>
+
+    <!-- Create Room Modal -->
+    <div id="createRoomModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Create Room</h2>
+          <button class="modal-close" onclick="hideModal('createRoomModal')">✕</button>
+        </div>
+        <div class="modal-body">
+          <div id="createRoomError" class="error-message" style="display: none;"></div>
+          <div class="form-group">
+            <label>Room Name</label>
+            <input type="text" id="newRoomName" placeholder="Room name" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Topic (optional)</label>
+            <input type="text" id="newRoomTopic" placeholder="Room topic" class="form-control">
+          </div>
+          <div class="form-group checkbox">
+            <input type="checkbox" id="newRoomPublic">
+            <label>Public room</label>
+          </div>
+          <div class="form-group checkbox">
+            <input type="checkbox" id="newRoomEncrypted">
+            <label>Enable encryption</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="hideModal('createRoomModal')">Cancel</button>
+          <button class="btn btn-primary" onclick="createRoom()">Create</button>
+        </div>
+      </div>
+    </div>
   </div>
 `;
 
@@ -1481,6 +1514,52 @@ export const roomsFunctions = (): string => `
   
   function refreshRooms() {
     loadRooms(0, document.getElementById('roomSearch')?.value || '');
+  }
+  
+  function showCreateRoomModal() {
+    document.getElementById('newRoomName').value = '';
+    document.getElementById('newRoomTopic').value = '';
+    document.getElementById('newRoomPublic').checked = false;
+    document.getElementById('newRoomEncrypted').checked = false;
+    document.getElementById('createRoomError').style.display = 'none';
+    showModal('createRoomModal');
+  }
+  
+  async function createRoom() {
+    const name = document.getElementById('newRoomName')?.value?.trim();
+    const topic = document.getElementById('newRoomTopic')?.value?.trim();
+    const isPublic = document.getElementById('newRoomPublic')?.checked || false;
+    const isEncrypted = document.getElementById('newRoomEncrypted')?.checked || false;
+    
+    if (!name) {
+      const errorEl = document.getElementById('createRoomError');
+      if (errorEl) {
+        errorEl.textContent = 'Room name is required';
+        errorEl.style.display = 'block';
+      }
+      return;
+    }
+    
+    try {
+      const data = await api.post('/rooms/create', {
+        name,
+        topic: topic || undefined,
+        preset: isPublic ? 'public_chat' : 'private_chat',
+        visibility: isPublic ? 'public' : 'private',
+      });
+      
+      showNotification('Room created successfully', 'success');
+      hideModal('createRoomModal');
+      await loadRooms(0);
+      
+    } catch (err) {
+      console.error('Failed to create room:', err);
+      const errorEl = document.getElementById('createRoomError');
+      if (errorEl) {
+        errorEl.textContent = 'Failed to create room: ' + (err.message || 'Unknown error');
+        errorEl.style.display = 'block';
+      }
+    }
   }
 `;
 
