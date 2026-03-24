@@ -1182,26 +1182,25 @@ export const usersFunctions = (): string => `
     document.getElementById('activeUsersTable').style.display = 'none';
     
     try {
-      // This would come from analytics
-      // For now, use mock data
-      const activeUsers = [
-        { user_id: '@admin:matrix.deepmeow.cc', messages: 1243, rooms: 12, last_active: Date.now() - 3600000 },
-        { user_id: '@user1:matrix.deepmeow.cc', messages: 876, rooms: 8, last_active: Date.now() - 7200000 },
-        { user_id: '@user2:matrix.deepmeow.cc', messages: 543, rooms: 5, last_active: Date.now() - 14400000 },
-        { user_id: '@user3:matrix.deepmeow.cc', messages: 321, rooms: 4, last_active: Date.now() - 86400000 },
-        { user_id: '@user4:matrix.deepmeow.cc', messages: 123, rooms: 3, last_active: Date.now() - 172800000 }
-      ];
+      const data = await api.get('/users/active?limit=10&days=7');
+      const activeUsers = data.users || [];
       
       const tbody = document.getElementById('activeUsersList');
       tbody.innerHTML = '';
       
+      if (activeUsers.length === 0) {
+        document.getElementById('activeUsersLoading').style.display = 'none';
+        document.getElementById('activeUsersLoading').innerHTML = 'No activity data available';
+        return;
+      }
+      
       activeUsers.forEach(user => {
         const tr = document.createElement('tr');
         tr.innerHTML = \`
-          <td>\${user.user_id}</td>
-          <td>\${user.messages}</td>
-          <td>\${user.rooms}</td>
-          <td>\${new Date(user.last_active).toLocaleString()}</td>
+          <td>\${truncateString(user.user_id, 30)}</td>
+          <td>\${user.message_count}</td>
+          <td>\${user.rooms_joined}</td>
+          <td>\${user.last_active ? new Date(user.last_active).toLocaleString() : '-'}</td>
           <td>
             <button class="btn-icon-sm" onclick="viewUserDetails('\${user.user_id}')">👁️</button>
           </td>

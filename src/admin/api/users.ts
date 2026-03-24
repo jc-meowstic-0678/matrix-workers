@@ -206,4 +206,32 @@ usersApi.get('/users/:userId/sessions', requireAdminAuth, async (c) => {
   return c.json({ sessions: sessions.results });
 });
 
+// GET /api/users/active - Get most active users
+usersApi.get('/users/active', requireAdminAuth, async (c) => {
+  const db = c.env.DB;
+  const limit = Math.min(parseInt(c.req.query('limit') || '10'), 50);
+  const days = parseInt(c.req.query('days') || '7');
+  const sinceTs = Date.now() - (days * 24 * 60 * 60 * 1000);
+
+  const activeUsers = await db.prepare(`
+    SELECT 
+      e.sender as user_id,
+      COUNT(*) as message_count,
+      COUNT(DISTINCT e.room_id) as rooms_joined,
+      MAX(e.origin_server_ts) as last_active
+    FROM events e
+    INNER JOIN room_memberships rm ON e.sender = rm.user_id AND e.room_id = rm.room_id AND rm.membership = 'join'
+    WHERE e.event_type = 'm.room.message'
+      AND e.origin_server_ts > ?
+    GROUP BY e.sender
+    ORDER BY message_count DESC
+    LIMIT ?
+  `).bind(sinceTs, limit).all();
+
+  return c.json({ 
+    users: activeUsers.results,
+    period_days: days 
+  });
+});
+
 export { usersApi };
