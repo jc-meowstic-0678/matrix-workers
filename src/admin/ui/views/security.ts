@@ -706,20 +706,28 @@ export const securityFunctions = (): string => `
   }
   
   async function loadSessions(page = 0) {
-    document.getElementById('sessionsLoading').style.display = 'block';
-    document.getElementById('sessionsTable').style.display = 'none';
-    document.getElementById('noSessions').style.display = 'none';
+    const loadingEl = document.getElementById('sessionsLoading');
+    const tableEl = document.getElementById('sessionsTable');
+    const noSessionsEl = document.getElementById('noSessions');
+    
+    if (!loadingEl || !tableEl || !noSessionsEl) return;
+    
+    loadingEl.style.display = 'block';
+    tableEl.style.display = 'none';
+    noSessionsEl.style.display = 'none';
     
     try {
       const data = await api.get('/security/sessions?limit=50&offset=' + (page * 50));
       
       // Update stats
-      document.getElementById('activeSessionsCount').textContent = data.total || '0';
+      const activeSessionsEl = document.getElementById('activeSessionsCount');
+      const uniqueUsersEl = document.getElementById('uniqueUsersCount');
+      if (activeSessionsEl) activeSessionsEl.textContent = data.total || '0';
       
       // Get unique users count
       const uniqueUsers = new Set();
       data.sessions?.forEach((s) => uniqueUsers.add(s.user_id));
-      document.getElementById('uniqueUsersCount').textContent = uniqueUsers.size || '0';
+      if (uniqueUsersEl) uniqueUsersEl.textContent = uniqueUsers.size || '0';
       
       currentSessions = data.sessions || [];
       
@@ -736,12 +744,13 @@ export const securityFunctions = (): string => `
       const totalPages = Math.ceil(filteredSessions.length / limit);
       
       if (paginatedSessions.length === 0) {
-        document.getElementById('sessionsLoading').style.display = 'none';
-        document.getElementById('noSessions').style.display = 'block';
+        loadingEl.style.display = 'none';
+        noSessionsEl.style.display = 'block';
         return;
       }
       
       const tbody = document.getElementById('sessionsList');
+      if (!tbody) return;
       tbody.innerHTML = '';
       
       paginatedSessions.forEach((session) => {
@@ -767,12 +776,13 @@ export const securityFunctions = (): string => `
       // Update pagination
       renderSessionsPagination(page, totalPages);
       
-      document.getElementById('sessionsLoading').style.display = 'none';
-      document.getElementById('sessionsTable').style.display = 'block';
+      loadingEl.style.display = 'none';
+      tableEl.style.display = 'block';
       
     } catch (err) {
       console.error('Failed to load sessions:', err);
-      document.getElementById('sessionsLoading').innerHTML = 'Failed to load sessions';
+      loadingEl.innerHTML = 'Failed to load sessions. Please try again.';
+      showNotification('Failed to load sessions', 'error');
     }
   }
   
@@ -879,6 +889,8 @@ export const securityFunctions = (): string => `
   
   function renderSessionsPagination(currentPage, totalPages) {
     const paginationEl = document.getElementById('sessionsPagination');
+    if (!paginationEl) return;
+    
     paginationEl.innerHTML = '';
     
     if (totalPages <= 1) return;
@@ -914,22 +926,36 @@ export const securityFunctions = (): string => `
       const data = await api.get('/security/rate-limits');
       const limits = data.limits || {};
       
-      document.getElementById('loginRateLimit').textContent = limits.login?.requests + '/' + (limits.login?.window_ms / 1000) + 's' || '10/min';
-      document.getElementById('registerRateLimit').textContent = limits.register?.requests + '/' + (limits.register?.window_ms / 1000) + 's' || '5/min';
-      document.getElementById('syncRateLimit').textContent = limits.sync?.requests + '/' + (limits.sync?.window_ms / 1000) + 's' || '300/min';
-      document.getElementById('messageRateLimit').textContent = limits.send_message?.requests + '/' + (limits.send_message?.window_ms / 1000) + 's' || '60/min';
-      document.getElementById('createRoomRateLimit').textContent = limits.create_room?.requests + '/' + (limits.create_room?.window_ms / 1000) + 's' || '10/min';
-      document.getElementById('mediaRateLimit').textContent = limits.media_upload?.requests + '/' + (limits.media_upload?.window_ms / 1000) + 's' || '30/min';
+      const loginEl = document.getElementById('loginRateLimit');
+      const registerEl = document.getElementById('registerRateLimit');
+      const syncEl = document.getElementById('syncRateLimit');
+      const messageEl = document.getElementById('messageRateLimit');
+      const createRoomEl = document.getElementById('createRoomRateLimit');
+      const mediaEl = document.getElementById('mediaRateLimit');
+      
+      if (loginEl) loginEl.textContent = limits.login?.requests + '/' + (limits.login?.window_ms / 1000) + 's' || '10/min';
+      if (registerEl) registerEl.textContent = limits.register?.requests + '/' + (limits.register?.window_ms / 1000) + 's' || '5/min';
+      if (syncEl) syncEl.textContent = limits.sync?.requests + '/' + (limits.sync?.window_ms / 1000) + 's' || '300/min';
+      if (messageEl) messageEl.textContent = limits.send_message?.requests + '/' + (limits.send_message?.window_ms / 1000) + 's' || '60/min';
+      if (createRoomEl) createRoomEl.textContent = limits.create_room?.requests + '/' + (limits.create_room?.window_ms / 1000) + 's' || '10/min';
+      if (mediaEl) mediaEl.textContent = limits.media_upload?.requests + '/' + (limits.media_upload?.window_ms / 1000) + 's' || '30/min';
       
     } catch (err) {
       console.error('Failed to load rate limits:', err);
+      showNotification('Failed to load rate limits', 'error');
     }
   }
   
   async function loadSecurityEvents() {
-    document.getElementById('eventsLoading').style.display = 'block';
-    document.getElementById('eventsTable').style.display = 'none';
-    document.getElementById('noEvents').style.display = 'none';
+    const loadingEl = document.getElementById('eventsLoading');
+    const tableEl = document.getElementById('eventsTable');
+    const noEventsEl = document.getElementById('noEvents');
+    
+    if (!loadingEl || !tableEl || !noEventsEl) return;
+    
+    loadingEl.style.display = 'block';
+    tableEl.style.display = 'none';
+    noEventsEl.style.display = 'none';
     
     try {
       const type = document.getElementById('securityEventType')?.value || 'all';
@@ -940,12 +966,13 @@ export const securityFunctions = (): string => `
       currentSecurityEvents = events;
       
       if (events.length === 0) {
-        document.getElementById('eventsLoading').style.display = 'none';
-        document.getElementById('noEvents').style.display = 'block';
+        loadingEl.style.display = 'none';
+        noEventsEl.style.display = 'block';
         return;
       }
       
       const tbody = document.getElementById('eventsList');
+      if (!tbody) return;
       tbody.innerHTML = '';
       
       events.forEach((event) => {
@@ -964,18 +991,21 @@ export const securityFunctions = (): string => `
       
       // Update failed logins count
       const failedLogins = events.filter(e => e.type === 'failed_login').length;
-      document.getElementById('failedLogins').textContent = failedLogins;
+      const failedLoginsEl = document.getElementById('failedLogins');
+      if (failedLoginsEl) failedLoginsEl.textContent = failedLogins;
       
       // Update rate limit hits
       const rateLimitHits = events.filter(e => e.type === 'rate_limit').length;
-      document.getElementById('rateLimitHits').textContent = rateLimitHits;
+      const rateLimitHitsEl = document.getElementById('rateLimitHits');
+      if (rateLimitHitsEl) rateLimitHitsEl.textContent = rateLimitHits;
       
-      document.getElementById('eventsLoading').style.display = 'none';
-      document.getElementById('eventsTable').style.display = 'block';
+      loadingEl.style.display = 'none';
+      tableEl.style.display = 'block';
       
     } catch (err) {
       console.error('Failed to load security events:', err);
-      document.getElementById('eventsLoading').innerHTML = 'Failed to load events';
+      loadingEl.innerHTML = 'Failed to load events. Please try again.';
+      showNotification('Failed to load security events', 'error');
     }
   }
   
@@ -1131,20 +1161,28 @@ export const securityFunctions = (): string => `
   async function viewSessionDetails(sessionId) {
     try {
       const session = currentSessions.find(s => s.id === sessionId);
-      if (!session) return;
+      if (!session) {
+        showNotification('Session not found', 'error');
+        return;
+      }
       
-      document.getElementById('sessionDetailId').textContent = session.id;
-      document.getElementById('sessionDetailUser').textContent = session.user_id;
-      document.getElementById('sessionDetailDevice').textContent = session.device_id || 'Unknown';
-      document.getElementById('sessionDetailDeviceName').textContent = session.device_name || 'Unknown';
-      document.getElementById('sessionDetailIp').textContent = session.last_seen_ip || 'Unknown';
-      document.getElementById('sessionDetailUserAgent').textContent = session.user_agent || 'Unknown';
-      document.getElementById('sessionDetailCreated').textContent = session.created_at ? new Date(session.created_at).toLocaleString() : 'Unknown';
-      document.getElementById('sessionDetailLastSeen').textContent = session.last_seen_ts ? new Date(session.last_seen_ts).toLocaleString() : 'Never';
-      document.getElementById('sessionDetailExpires').textContent = session.expires_at ? new Date(session.expires_at).toLocaleString() : 'Never';
-      document.getElementById('sessionDetailAuth').textContent = 'Bearer Token';
-      document.getElementById('sessionDetailRefresh').textContent = session.refresh_token ? 'Available' : 'Not available';
-      document.getElementById('sessionDetailRateLimited').textContent = 'No';
+      const setEl = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+      };
+      
+      setEl('sessionDetailId', session.id);
+      setEl('sessionDetailUser', session.user_id);
+      setEl('sessionDetailDevice', session.device_id || 'Unknown');
+      setEl('sessionDetailDeviceName', session.device_name || 'Unknown');
+      setEl('sessionDetailIp', session.last_seen_ip || 'Unknown');
+      setEl('sessionDetailUserAgent', session.user_agent || 'Unknown');
+      setEl('sessionDetailCreated', session.created_at ? new Date(session.created_at).toLocaleString() : 'Unknown');
+      setEl('sessionDetailLastSeen', session.last_seen_ts ? new Date(session.last_seen_ts).toLocaleString() : 'Never');
+      setEl('sessionDetailExpires', session.expires_at ? new Date(session.expires_at).toLocaleString() : 'Never');
+      setEl('sessionDetailAuth', 'Bearer Token');
+      setEl('sessionDetailRefresh', session.refresh_token ? 'Available' : 'Not available');
+      setEl('sessionDetailRateLimited', 'No');
       
       showModal('sessionDetailsModal');
       
@@ -1155,19 +1193,22 @@ export const securityFunctions = (): string => `
   }
   
   async function revokeSession(sessionId) {
-    const id = sessionId || currentSessions.find(s => s.id === sessionId)?.id;
-    if (!id) return;
+    if (!sessionId) {
+      showNotification('Session ID is required', 'error');
+      return;
+    }
     
     confirmAction(
       'Revoke Session',
       'Force logout this session? The user will need to log in again.',
       async () => {
         try {
-          await api.delete('/security/sessions/' + id);
+          await api.delete('/security/sessions/' + sessionId);
           showNotification('Session revoked successfully', 'success');
-          loadSessions(0);
           hideModal('sessionDetailsModal');
+          await loadSessions(0);
         } catch (err) {
+          console.error('Failed to revoke session:', err);
           showNotification('Failed to revoke session', 'error');
         }
       }
@@ -1179,8 +1220,23 @@ export const securityFunctions = (): string => `
       'Revoke All Sessions',
       'Force logout ALL active sessions? All users will need to log in again.',
       async () => {
-        // This would call a bulk revoke endpoint
-        showNotification('Revoke all sessions not implemented', 'info');
+        // Revoke all sessions one by one
+        try {
+          let revokedCount = 0;
+          for (const session of currentSessions) {
+            try {
+              await api.delete('/security/sessions/' + session.id);
+              revokedCount++;
+            } catch (e) {
+              console.error('Failed to revoke session:', session.id, e);
+            }
+          }
+          showNotification('Revoked ' + revokedCount + ' sessions', 'success');
+          await loadSessions(0);
+        } catch (err) {
+          console.error('Failed to revoke all sessions:', err);
+          showNotification('Failed to revoke all sessions', 'error');
+        }
       }
     );
   }
@@ -1208,15 +1264,19 @@ export const securityFunctions = (): string => `
   
   function showSetSecretModal(secretName) {
     currentSecretName = secretName;
-    document.getElementById('secretNameLabel').textContent = 'Secret: ' + secretName;
-    document.getElementById('secretName').value = secretName;
-    document.getElementById('secretValue').value = '';
+    
+    const nameLabel = document.getElementById('secretNameLabel');
+    const nameInput = document.getElementById('secretName');
+    const valueInput = document.getElementById('secretValue');
+    const generator = document.getElementById('secretGenerator');
+    
+    if (nameLabel) nameLabel.textContent = 'Secret: ' + secretName;
+    if (nameInput) nameInput.value = secretName;
+    if (valueInput) valueInput.value = '';
     
     // Show generator for certain secrets
-    if (secretName === 'OIDC_ENCRYPTION_KEY') {
-      document.getElementById('secretGenerator').style.display = 'block';
-    } else {
-      document.getElementById('secretGenerator').style.display = 'none';
+    if (generator) {
+      generator.style.display = secretName === 'OIDC_ENCRYPTION_KEY' ? 'block' : 'none';
     }
     
     showModal('setSecretModal');
