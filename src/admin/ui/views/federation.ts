@@ -6,14 +6,6 @@ export const federationView = (): string => `
     <div class="header">
       <h2>Federation</h2>
       <div class="header-actions">
-        <button class="btn btn-primary" onclick="runFederationTests()">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M23 4v6h-6"></path>
-            <path d="M1 20v-6h6"></path>
-            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-          </svg>
-          Run Tests
-        </button>
         <button class="btn btn-secondary" onclick="refreshFederation()">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M23 4v6h-6"></path>
@@ -41,40 +33,6 @@ export const federationView = (): string => `
       <div class="stat-card" id="federationStatusCard">
         <div class="label">Federation Status</div>
         <div class="value" id="federationEnabled">-</div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-header">
-        <h3>Federation Test Results</h3>
-        <button class="btn btn-sm btn-secondary" onclick="copyTestResults()">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-          </svg>
-          Copy Results
-        </button>
-      </div>
-      <div class="card-body">
-        <div id="federationTestsLoading" class="loading">
-          <div class="spinner"></div>
-          Running tests...
-        </div>
-        <div id="federationTestsResults" style="display: none;">
-          <table class="test-results-table">
-            <thead>
-              <tr>
-                <th>Test</th>
-                <th>Status</th>
-                <th>Message</th>
-                <th>Details</th>
-              </tr>
-            </thead>
-            <tbody id="federationTestsList"></tbody>
-          </table>
-          <div class="test-summary" id="testSummary"></div>
-        </div>
-        <div id="noTests" class="loading" style="display: none;">No tests run yet. Click "Run Tests" to begin.</div>
       </div>
     </div>
 
@@ -343,49 +301,6 @@ export const federationStyles = `
   .endpoint-status.unknown {
     background: rgba(245, 158, 11, 0.1);
     color: var(--accent-amber);
-  }
-  
-  .test-results-table {
-    width: 100%;
-  }
-  
-  .test-results-table td {
-    padding: 12px 8px;
-  }
-  
-  .test-results-table .status-badge {
-    display: inline-block;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 600;
-  }
-  
-  .status-badge.passed {
-    background: rgba(34, 197, 94, 0.2);
-    color: var(--accent-green);
-  }
-  
-  .status-badge.failed {
-    background: rgba(239, 68, 68, 0.2);
-    color: var(--accent-red);
-  }
-  
-  .test-summary {
-    margin-top: 16px;
-    padding: 12px;
-    background: var(--bg-elevated);
-    border-radius: 8px;
-    text-align: center;
-    font-size: 14px;
-  }
-  
-  .test-summary.passed {
-    border-left: 4px solid var(--accent-green);
-  }
-  
-  .test-summary.failed {
-    border-left: 4px solid var(--accent-red);
   }
   
   .stats-mini-grid {
@@ -666,66 +581,6 @@ export const federationFunctions = (): string => `
     }
   }
   
-  async function runFederationTests() {
-    document.getElementById('federationTestsLoading').style.display = 'block';
-    document.getElementById('federationTestsResults').style.display = 'none';
-    document.getElementById('noTests').style.display = 'none';
-    
-    try {
-      const results = await api.get('/federation/test');
-      
-      const tbody = document.getElementById('federationTestsList');
-      tbody.innerHTML = '';
-      
-      let passedCount = 0;
-      
-      results.tests.forEach((test) => {
-        const passed = test.passed;
-        if (passed) passedCount++;
-        
-        const tr = document.createElement('tr');
-        tr.innerHTML = \`
-          <td>\${test.name}</td>
-          <td><span class="status-badge \${passed ? 'passed' : 'failed'}">\${passed ? 'PASSED' : 'FAILED'}</span></td>
-          <td>\${test.message || '-'}</td>
-          <td><button class="btn-icon" onclick="showTestDetails('\${test.name}')">ℹ️</button></td>
-        \`;
-        tbody.appendChild(tr);
-      });
-      
-      const totalTests = results.tests.length;
-      const summary = document.getElementById('testSummary');
-      summary.className = \`test-summary \${passedCount === totalTests ? 'passed' : 'failed'}\`;
-      summary.innerHTML = \`
-        <strong>\${passedCount}/\${totalTests} tests passed</strong>
-        \${passedCount === totalTests ? '✅ All systems operational' : '⚠️ Some checks failed'}
-      \`;
-      
-      document.getElementById('federationTestsLoading').style.display = 'none';
-      document.getElementById('federationTestsResults').style.display = 'block';
-      
-    } catch (err) {
-      console.error('Failed to run federation tests:', err);
-      document.getElementById('federationTestsLoading').style.display = 'none';
-      document.getElementById('noTests').style.display = 'block';
-      showNotification('Failed to run federation tests', 'error');
-    }
-  }
-  
-  function showTestDetails(testName) {
-    // This would show more details about the test
-    // For now, just a placeholder
-    showNotification(\`Details for \${testName} would be shown here\`, 'info');
-  }
-  
-  async function copyTestResults() {
-    const results = document.getElementById('federationTestsList')?.innerText;
-    if (results) {
-      await navigator.clipboard.writeText(results);
-      showNotification('Test results copied to clipboard', 'success');
-    }
-  }
-  
   async function loadServers(page = 0, search = '') {
     document.getElementById('serversLoading').style.display = 'block';
     document.getElementById('serversTable').style.display = 'none';
@@ -923,7 +778,6 @@ export const federationFunctions = (): string => `
   function refreshFederation() {
     loadFederation();
     loadSigningKeys();
-    runFederationTests();
   }
   
   function copyToClipboard(text) {
