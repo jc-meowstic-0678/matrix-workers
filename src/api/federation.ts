@@ -68,17 +68,13 @@ app.get('/_matrix/key/v2/server', async (c) => {
     const signingKey = await getServerSigningKey(db);
 
     if (signingKey) {
-      // Create public-only JWK (remove private key data)
-      const publicKeyJwk: JsonWebKey = {
-        kty: signingKey.privateKeyJwk.kty,
-        crv: signingKey.privateKeyJwk.crv,
-        x: signingKey.privateKeyJwk.x,
-      };
+      // Extract the raw public key bytes from the JWK
+      const publicKeyBase64 = signingKey.privateKeyJwk.x!;
 
       const response = {
         server_name: serverName,
         verify_keys: {
-          [signingKey.keyId]: publicKeyJwk,
+          [signingKey.keyId]: { key: publicKeyBase64 },
         },
         old_verify_keys: {},
         signatures: {},
@@ -106,15 +102,11 @@ app.get('/_matrix/key/v2/server', async (c) => {
     }
 
     // Try to parse the fallback key
-    let publicKeyJwk: JsonWebKey;
+    let publicKeyBase64: string;
     let privateKeyJwk: JsonWebKey;
     try {
       const parsed = JSON.parse(anyKey.private_key_jwk);
-      publicKeyJwk = {
-        kty: parsed.kty,
-        crv: parsed.crv,
-        x: parsed.x,
-      };
+      publicKeyBase64 = parsed.x;
       privateKeyJwk = parsed;
     } catch (parseErr) {
       console.error('[federation] Failed to parse signing key:', parseErr);
@@ -127,7 +119,7 @@ app.get('/_matrix/key/v2/server', async (c) => {
     const response = {
       server_name: serverName,
       verify_keys: {
-        [anyKey.key_id]: publicKeyJwk,
+        [anyKey.key_id]: { key: publicKeyBase64 },
       },
       old_verify_keys: {},
       signatures: {},
