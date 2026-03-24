@@ -1,6 +1,14 @@
 -- Migration 013: Sliding Sync Performance Indexes
+-- Consolidates indexes from 005 (query optimization) and 013 (sliding sync)
 -- Adds critical indexes for optimized Sliding Sync
 -- Note: Room type/encrypted columns should be added separately if needed
+
+-- ============================================
+-- Room State (for state lookups)
+-- ============================================
+
+CREATE INDEX IF NOT EXISTS idx_room_state_room_type
+ON room_state(room_id, event_type);
 
 -- ============================================
 -- Room Memberships (for user's room lists)
@@ -18,6 +26,9 @@ ON room_memberships(user_id, created_at DESC);
 -- ============================================
 -- Events (for timeline and recency sorting)
 -- ============================================
+
+CREATE INDEX IF NOT EXISTS idx_events_room_type
+ON events(room_id, event_type);
 
 CREATE INDEX IF NOT EXISTS idx_events_room_timestamp_desc 
 ON events(room_id, origin_server_ts DESC);
