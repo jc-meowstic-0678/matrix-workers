@@ -165,6 +165,41 @@ export const federationView = (): string => `
 
     <div class="card">
       <div class="card-header">
+        <h3>Server Signing Keys</h3>
+        <div class="header-actions">
+          <button class="btn btn-primary" onclick="loadSigningKeys()">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M23 4v6h-6"></path>
+              <path d="M1 20v-6h6"></path>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+            Refresh
+          </button>
+          <button class="btn btn-warning" onclick="generateNewSigningKey()">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
+            </svg>
+            Generate New Key
+          </button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="keysLoading" class="loading">
+          <div class="spinner"></div>
+          Loading signing keys...
+        </div>
+        <div id="keysContent" style="display: none;">
+          <div id="noKeys" class="loading" style="display: none;">
+            <p>No signing keys found. Generate a new key to enable federation.</p>
+          </div>
+          <div id="keysList"></div>
+        </div>
+        <div id="keysError" class="loading" style="display: none;"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
         <h3>Known Federation Servers</h3>
         <div class="header-actions">
           <input 
@@ -428,6 +463,73 @@ export const federationStyles = `
   .server-status.degraded {
     background: var(--accent-amber);
   }
+  
+  .key-item {
+    padding: 16px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    margin-bottom: 12px;
+  }
+  
+  .key-item.current {
+    border-color: var(--accent-green);
+    border-left: 4px solid var(--accent-green);
+  }
+  
+  .key-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .key-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .current-badge {
+    background: var(--accent-green);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  
+  .key-meta {
+    display: flex;
+    gap: 16px;
+    color: var(--text-secondary);
+    font-size: 13px;
+  }
+  
+  .key-public {
+    padding-top: 12px;
+    border-top: 1px solid var(--border-default);
+  }
+  
+  .key-public strong {
+    display: block;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+    font-size: 13px;
+  }
+  
+  .key-value {
+    display: block;
+    font-family: monospace;
+    font-size: 12px;
+    background: var(--bg-base);
+    padding: 8px;
+    border-radius: 4px;
+    overflow-x: auto;
+    word-break: break-all;
+  }
 `;
 
 // Federation JavaScript functions
@@ -450,6 +552,9 @@ export const federationFunctions = (): string => `
       document.getElementById('signingKeyId').textContent = status.signing_key_id || '-';
       document.getElementById('knownServers').textContent = status.known_servers_count || '0';
       document.getElementById('federationEnabled').innerHTML = status.federation_enabled ? '✅ Enabled' : '❌ Disabled';
+      
+      // Load signing keys
+      await loadSigningKeys();
       
       // Load well-known endpoint statuses
       await checkWellKnownEndpoints(status.server_name);
@@ -817,12 +922,95 @@ export const federationFunctions = (): string => `
   
   function refreshFederation() {
     loadFederation();
+    loadSigningKeys();
     runFederationTests();
   }
   
   function copyToClipboard(text) {
     navigator.clipboard.writeText(text);
     showNotification('Copied to clipboard', 'success');
+  }
+  
+  // ============================================
+  // Server Signing Keys Functions
+  // ============================================
+  
+  async function loadSigningKeys() {
+    const loadingEl = document.getElementById('keysLoading');
+    const contentEl = document.getElementById('keysContent');
+    const errorEl = document.getElementById('keysError');
+    const noKeysEl = document.getElementById('noKeys');
+    
+    if (!loadingEl || !contentEl || !errorEl) return;
+    
+    loadingEl.style.display = 'block';
+    contentEl.style.display = 'none';
+    errorEl.style.display = 'none';
+    
+    try {
+      const data = await api.get('/security/server-key');
+      const keys = data.keys || [];
+      
+      loadingEl.style.display = 'none';
+      
+      if (keys.length === 0) {
+        if (noKeysEl) {
+          noKeysEl.style.display = 'block';
+          contentEl.style.display = 'block';
+        }
+        return;
+      }
+      
+      const keysList = document.getElementById('keysList');
+      if (!keysList) return;
+      
+      keysList.innerHTML = keys.map(key => \`
+        <div class="key-item \${key.is_current ? 'current' : ''}">
+          <div class="key-header">
+            <div class="key-info">
+              <strong>Key ID:</strong> \${key.key_id || 'N/A'}
+              \${key.is_current ? '<span class="current-badge">Current</span>' : ''}
+            </div>
+            <div class="key-meta">
+              <span><strong>Version:</strong> \${key.key_version || 'N/A'}</span>
+              <span><strong>Valid from:</strong> \${key.valid_from ? new Date(key.valid_from).toLocaleString() : 'N/A'}</span>
+            </div>
+          </div>
+          <div class="key-public">
+            <strong>Public Key:</strong>
+            <code class="key-value">\${key.public_key || 'N/A'}</code>
+          </div>
+        </div>
+      \`).join('');
+      
+      contentEl.style.display = 'block';
+      
+    } catch (err) {
+      console.error('Failed to load signing keys:', err);
+      loadingEl.style.display = 'none';
+      errorEl.innerHTML = 'Failed to load signing keys. Make sure signing key tables exist in the database.';
+      errorEl.style.display = 'block';
+      showNotification('Failed to load signing keys', 'error');
+    }
+  }
+  
+  async function generateNewSigningKey() {
+    if (!confirm('Are you sure you want to generate a new signing key?\\n\\nThis will invalidate the current key and may temporarily affect federation.\\n\\nYou should restart workers after generating a new key.')) {
+      return;
+    }
+    
+    try {
+      const data = await api.post('/security/server-key', {});
+      
+      showNotification('New signing key generated successfully. Key ID: ' + data.key_id, 'success');
+      
+      // Reload the keys list
+      await loadSigningKeys();
+      
+    } catch (err) {
+      console.error('Failed to generate signing key:', err);
+      showNotification('Failed to generate signing key: ' + (err.message || 'Unknown error'), 'error');
+    }
   }
 `;
 
