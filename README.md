@@ -4,38 +4,23 @@
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/jc-meowstic-0678/matrix-workers)
 
-This is a proof of concept Matrix homeserver implementation running entirely on Cloudflare's edge infrastructure. It demonstrates full end-to-end encryption (E2EE) using Matrix protocols with Element X on the Cloudflare Workers platform, featuring **enterprise-grade performance optimizations** and **strongly consistent E2EE key storage**.
+A Matrix homeserver (spec v1.17) running entirely on Cloudflare's edge infrastructure. Features full end-to-end encryption (E2EE), Sliding Sync, and Federation support.
 
-> **Note**: This is a prototype and not endorsed as production-ready. Feel free to submit issues, fork the project, or continue building on this example!
-
-## ✨ What's New in the Dev Branch
-
-The `dev` branch includes significant architectural improvements and performance optimizations:
-
-| Feature | Improvement | Benefit |
-|---------|-------------|---------|
-| **E2EE Key Storage** | Migrated from KV to Durable Objects with SQLite | **Strong consistency** - one-time keys can never be double-claimed |
-| **Sliding Sync** | Complete performance overhaul | 2-5x faster sync, 70% faster initial load, 50-80% fewer database queries |
-| **Connection Pooling** | Priority-based D1 connection management | 30% latency reduction under load |
-| **Streaming Responses** | Progressive NDJSON using TransformStream | Better perceived performance for large syncs |
-| **Performance Monitoring** | Built-in metrics and slow-sync detection | Better operational observability |
-
-These optimizations were developed in collaboration with **DeepSeek AI**, which provided architectural guidance, code reviews, and performance recommendations throughout the development process.
+**Server:** `matrix.deepmeow.cc`
 
 ## Live Demo
 
-You can verify federation compatibility using the [Matrix Federation Tester](https://federationtester.matrix.org/) 
+Test federation compatibility using the [Matrix Federation Tester](https://federationtester.matrix.org/).
 
 ## Quick Start
 
 ### One-Click Deploy
 
-The fastest way to deploy is using the Deploy to Cloudflare button above. After clicking:
-
-1. Cloudflare provisions all resources automatically
-2. Update `SERVER_NAME` to your domain
-3. Run database migrations
-4. Configure your custom domain
+1. Click the "Deploy to Cloudflare" button above
+2. Cloudflare provisions all resources automatically
+3. Update `SERVER_NAME` to your domain
+4. Run database migrations
+5. Configure your custom domain
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for complete instructions.
 
@@ -47,32 +32,18 @@ git clone https://github.com/jc-meowstic-0678/matrix-workers
 cd matrix-workers
 npm install
 
-# Create resources (save IDs from output)
+# Create resources
 npx wrangler d1 create my-matrix-db
 npx wrangler kv namespace create SESSIONS
 npx wrangler kv namespace create CACHE
 npx wrangler kv namespace create ACCOUNT_DATA
 npx wrangler r2 bucket create my-matrix-media
 
-# Note: E2EE keys (DEVICE_KEYS, ONE_TIME_KEYS, CROSS_SIGNING_KEYS)
-# now use Durable Objects with SQLite - no KV namespaces needed!
-
-# Update wrangler.jsonc with your resource IDs and SERVER_NAME
-# Then run migrations and deploy (see DEPLOYMENT.md for details)
+# Update wrangler.jsonc with resource IDs and SERVER_NAME
+# See DEPLOYMENT.md for full instructions
 ```
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for the complete step-by-step guide.
-
-### Email Verification (Optional)
-
-For 3PID email verification support, configure Cloudflare Email Service (currently in closed beta):
-
-```bash
-npx wrangler secret put EMAIL_FROM
-# Example: noreply@matrix.yourdomain.com
-```
-
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -82,105 +53,116 @@ npx wrangler secret put EMAIL_FROM
 │  │   Workers   │  │  Durable    │  │     D1      │  │         R2          │ │
 │  │   (Hono)    │──│  Objects    │──│  (SQLite)   │  │   (Object Storage)  │ │
 │  │             │  │             │  │             │  │                     │ │
-│  │ • Routing   │  │ • Room DO   │  │ • users     │  │ • Media files       │ │
-│  │ • Auth      │  │ • Sync DO   │  │ • rooms     │  │ • Thumbnails        │ │
-│  │ • API       │  │ • Fed DO    │  │ • events    │  │ • Avatars           │ │
-│  │ • Rate Lim  │  │ • Keys DO   │  │ • keys      │  │                     │ │
-│  └─────────────┘  │ • Push DO   │  │ • tokens    │  └─────────────────────┘ │
-│         │         │ • Admin DO  │  └─────────────┘            │             │
-│         │         │ • Call DO   │                             │             │
-│         │         │ • Rate DO   │                             │             │
+│  │ - Routing   │  │ - Room DO   │  │ - users     │  │ - Media files       │ │
+│  │ - Auth      │  │ - Sync DO   │  │ - rooms     │  │ - Thumbnails        │ │
+│  │ - API       │  │ - Fed DO    │  │ - events    │  │ - Avatars           │ │
+│  │ - Rate Lim  │  │ - Keys DO   │  │ - keys      │  │                     │ │
+│  └─────────────┘  │ - Push DO   │  │ - tokens    │  └─────────────────────┘ │
+│         │         │ - Admin DO  │  └─────────────┘            │             │
+│         │         │ - Call DO   │                             │             │
+│         │         │ - Rate DO   │                             │             │
 │         │         └─────────────┘         │                   │             │
 │  ┌──────┴─────────────────────────────────┴───────────────────┴───────────┐ │
 │  │                          KV Namespaces                                 │ │
 │  │        SESSIONS · CACHE · ACCOUNT_DATA  (E2EE keys now in DO)         │ │
 │  └────────────────────────────────────────────────────────────────────────┘ │
-│  ┌────────────────────────────────────────────────────────────────────────┐ │
-│  │                     Workflows (Durable Execution)                      │ │
-│  │  RoomJoinWorkflow · PushNotificationWorkflow                           │ │
-│  └────────────────────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Key Architectural Improvements
-
-| Component | Previous (KV-based) | Current (Durable Objects) | Benefit |
-|-----------|-------------------|--------------------------|---------|
-| **E2EE Keys** | Eventually consistent | Strongly consistent with SQLite transactions | One-time keys can't be double-claimed |
-| **Sliding Sync** | Sequential processing | Parallel with caching & pre-computed lists | 2-5x faster sync |
-| **Connection Management** | Direct D1 queries | Priority connection pooling | 30% less latency |
-| **Response Format** | Full JSON | Progressive NDJSON streaming | Better UX |
-
-## ⚡ Performance Optimizations
-
-The `dev` branch includes a completely refactored Sliding Sync implementation:
+### Directory Structure
 
 ```
-src/api/sliding-sync/
-├── optimized-sync.ts       # Parallel list processing with concurrency control
-├── caching-strategy.ts     # Room summary caching with 30s TTL
-├── precomputed-lists.ts    # Pre-computed lists (invites, DMs, favourites)
-├── streaming-response.ts   # Progressive NDJSON streaming
-├── d1-pool.ts              # Priority-based D1 connection pooling
-└── performance-monitor.ts  # Metrics and slow-sync detection
+src/
+├── api/                    # Route handlers (30+ modules)
+│   ├── sliding-sync/      # Sliding Sync implementation
+│   └── federation.ts      # Server-Server API
+├── admin/                 # Admin dashboard & API
+│   ├── ui/               # Dashboard views
+│   └── api/              # Admin API endpoints
+├── middleware/            # Auth, rate limiting, CORS
+├── services/             # Business logic
+├── durable-objects/      # 8 DOs (Room, Sync, UserKeys, etc.)
+├── workflows/             # Cloudflare Workflows
+├── types/                # TypeScript types
+└── utils/                # Helpers (crypto, ids, errors)
+
+migrations/               # D1 schema files (001-013)
 ```
 
-### Performance Benchmarks
+### Storage Bindings
 
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| Initial sync (100 rooms) | ~3.5s | ~1.1s | **70% faster** |
-| Incremental sync | ~800ms | ~250ms | **70% faster** |
-| D1 queries per sync | 50-100 | 10-20 | **80% reduction** |
-| Multi-list processing | Sequential | Parallel (5x) | **5x throughput** |
+```json
+"kv_namespaces": [
+  { "binding": "SESSIONS" },
+  { "binding": "CACHE" },
+  { "binding": "ACCOUNT_DATA" }
+],
+"durable_objects": [
+  { "name": "USER_KEYS_DO" }
+],
+"d1_databases": [{ "binding": "DB" }],
+"r2_buckets": [{ "binding": "MEDIA" }]
+]
+```
 
-## 🔐 E2EE Key Storage: Strong Consistency
+## Features
 
-Critical E2EE data now uses **Durable Objects with SQLite** instead of KV:
+### Core Matrix Protocol
+- Client-Server API (v1.17)
+- Server-Server (Federation) API
+- End-to-End Encryption (E2EE via Megolm)
+- Sliding Sync (MSC3575)
 
-| Data Type | Storage | Consistency | Key Feature |
-|-----------|---------|-------------|-------------|
-| Device Keys | Durable Object | Strong | Atomic updates |
-| One-Time Keys | Durable Object | Strong | Transaction-based claiming |
-| Cross-Signing Keys | Durable Object | Strong | Signature verification |
-| Key Backups | D1 | Strong | Encrypted storage |
+### Admin Dashboard
+- **Dashboard** - Server stats, quick actions, activity overview
+- **Users** - Create, list, deactivate users; view most active users
+- **Rooms** - List and create rooms
+- **Federation** - Server status, signing keys, known servers
+- **Security** - Sessions, secrets status
+- **Media** - Uploaded files management
+- **Reports** - Content reports
+- **Settings** - Server configuration
 
-**Why this matters**: One-time keys are now claimed in database transactions, ensuring they can never be double-allocated - a critical security property for end-to-end encryption.
+### Security
+- PBKDF2-SHA256 password hashing (100,000 iterations)
+- E2EE keys in Durable Objects with SQLite transactions
+- Rate limiting via Durable Objects
 
-## 📊 Admin Dashboard
+## Recent Updates
 
-Access the admin dashboard at `/admin` on your server (e.g., `https://matrix.yourdomain.com/admin`).
+### TypeScript Improvements
+- Fixed typing issues in admin API modules
+- Added proper `Hono<AppEnv>()` type bindings
+- Fixed duplicate interface definitions
 
-Features include:
-- **Dashboard** - Server stats, activity charts, user breakdown
-- **User Management** - Create, deactivate, purge users; reset passwords
-- **Room Management** - View rooms, members, state; delete rooms
-- **Media Management** - View uploads, quarantine/delete media
-- **Performance Monitoring** - Sync latency, query metrics, slow operations
-- **Reports** - Review and resolve content reports
-- **Federation** - Monitor federation status with other servers
+### Admin Dashboard
+- Added "Most Active Users" feature with real data from events table
+- Added Create Room modal and functionality
+- Fixed UI layout issues (text overflow, redundant sections)
 
-**Keyboard Shortcuts**:
-- `Cmd/Ctrl+K` - Command palette
-- `g h` - Go to Dashboard
-- `g u` - Go to Users
-- `g r` - Go to Rooms
-- `g p` - Go to Performance
-- `/` - Focus search
-- `?` - Show shortcuts help
+### Database Migrations
+- Consolidated 17 migrations down to 12 files
+- Removed duplicate index definitions
+- Fixed D1 compatibility issues (FTS5 triggers)
+- All indexes use `IF NOT EXISTS` for idempotency
 
-## 📈 API Coverage
+### Full-Text Search
+- Application-level FTS indexing for user search
+- Fast search with graceful fallback to LIKE queries
+- Integrated into user creation flow
+
+## API Coverage
 
 ### Client-Server API
 
 | Category | Status |
 |----------|--------|
 | Authentication | ✅ |
-| Sync (including Sliding Sync) | ✅ *Optimized* |
+| Sync (including Sliding Sync) | ✅ |
 | Rooms | ✅ |
 | Messaging | ✅ |
 | State | ✅ |
-| E2EE | ✅ *Strong consistency* |
+| E2EE | ✅ |
 | To-Device | ✅ |
 | Push | ✅ |
 | Media | ✅ |
@@ -197,44 +179,44 @@ Features include:
 
 ### Server-Server (Federation) API
 
-All federation endpoints are implemented, including full E2EE support for key queries and claims using the new Durable Objects backend.
+Full federation endpoints with E2EE key queries and claims.
 
-## 🚀 Getting Started
+## Development
 
-1. **Deploy** using the button above or follow [DEPLOYMENT.md](DEPLOYMENT.md)
-2. **Configure** your domain and `SERVER_NAME`
-3. **Run migrations** to set up the database and indexes
-4. **Register your first user** and test with Element
+```bash
+npm run dev              # Local dev server
+npm run deploy           # Deploy to Cloudflare
+npm run typecheck        # TypeScript checking
+npm run lint             # ESLint
+npm run test             # Vitest
+npm run db:migrate       # Run migrations (remote)
+npm run db:migrate:local # Run migrations (local)
+```
 
-## 📚 Documentation
+## Documentation
 
-- [Deployment Guide](DEPLOYMENT.md) - Complete setup instructions
-- [Migration Guide](DEPLOYMENT.md#-migrating-e2ee-keys-from-kv-to-durable-objects) - Upgrading from KV to Durable Objects
-- [Performance Tuning](DEPLOYMENT.md#-performance-optimizations) - Configuration options
-- [API Reference](https://spec.matrix.org) - Matrix Specification v1.17
+- [DEPLOYMENT.md](DEPLOYMENT.md) - Complete setup instructions
+- [AGENTS.md](AGENTS.md) - Developer documentation for AI agents
+- [Matrix Specification](https://spec.matrix.org) - Matrix Protocol v1.17
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
-- **Original Project**: [nkuntz1934/matrix-workers](https://github.com/nkuntz1934/matrix-workers) for the foundation
-- **Claude Code Opus 4.5**: Assisted with initial implementation
-- **DeepSeek AI**: Provided architectural guidance, code reviews, and performance optimization recommendations for the Sliding Sync refactor, E2EE key storage migration, and overall performance improvements documented in this branch
-- **Cloudflare**: For the amazing Workers, D1, Durable Objects, and R2 platform
-- **Matrix.org**: For the open specification and reference implementations
+- **Original Project**: [nkuntz1934/matrix-workers](https://github.com/nkuntz1934/matrix-workers)
+- **Cloudflare**: Workers, D1, Durable Objects, and R2 platform
+- **Matrix.org**: Open specification and reference implementations
 
-## 🤝 Contributing
+## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request. Areas needing attention:
+Contributions welcome! Areas of interest:
 - Performance benchmarking and optimization
-- Federation testing with other homeservers
+- Federation testing
 - Additional MSC implementations
-- Documentation improvements
 - Client compatibility testing
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE)
 
 ---
 
-**Built with ❤️ on Cloudflare Workers**
----
+**Built on Cloudflare Workers**
