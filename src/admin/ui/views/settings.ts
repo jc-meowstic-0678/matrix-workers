@@ -3,7 +3,51 @@
 
 export const settingsView = (): string => `
   <div id="settingsView" class="view" style="display: none;">
-    <!-- Your existing settings view HTML -->
+    <div class="header">
+      <h2>Settings</h2>
+    </div>
+    
+    <div class="card">
+      <h3>Server Information</h3>
+      <div class="info-grid">
+        <div class="info-row">
+          <span class="info-label">Server Name</span>
+          <span class="info-value" id="serverNameDisplay">-</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Version</span>
+          <span class="info-value" id="serverVersionDisplay">-</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card" style="margin-top: 20px;">
+      <h3>Registration</h3>
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="setting-name">Enable Registration</div>
+          <div class="setting-description">Allow new users to register on this server</div>
+        </div>
+        <div class="setting-control">
+          <label class="toggle-switch">
+            <input type="checkbox" id="registrationEnabled">
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="status-badge disabled" id="registrationStatus">Disabled</span>
+        </div>
+      </div>
+      <div id="registrationNote" class="setting-note" style="display: none;">
+        Changes are saved automatically
+      </div>
+    </div>
+    
+    <div class="card" style="margin-top: 20px;">
+      <h3>Features</h3>
+      <div id="featuresLoading">Loading features...</div>
+      <div id="featuresList" style="display: none;">
+        <div id="featuresContainer" class="features-grid"></div>
+      </div>
+    </div>
   </div>
 `;
 
@@ -186,22 +230,25 @@ export const settingsFunctions = (): string => `
       const settings = await api.get('/settings');
       
       // Update server info
-      document.getElementById('serverNameDisplay').textContent = settings.server_name || '-';
-      document.getElementById('serverVersionDisplay').textContent = settings.version || '-';
+      const serverNameEl = document.getElementById('serverNameDisplay');
+      const serverVersionEl = document.getElementById('serverVersionDisplay');
+      if (serverNameEl) serverNameEl.textContent = settings.server_name || '-';
+      if (serverVersionEl) serverVersionEl.textContent = settings.version || '-';
       
       // Update registration toggle
       const registrationEnabled = settings.registration_enabled !== false;
       const toggle = document.getElementById('registrationEnabled');
       const status = document.getElementById('registrationStatus');
+      const note = document.getElementById('registrationNote');
       
-      if (toggle) {
+      if (toggle && status) {
         toggle.checked = registrationEnabled;
         status.textContent = registrationEnabled ? 'Enabled' : 'Disabled';
         status.className = 'status-badge ' + (registrationEnabled ? 'enabled' : 'disabled');
         
         // Show note when changed
         toggle.addEventListener('change', () => {
-          document.getElementById('registrationNote').style.display = 'block';
+          if (note) note.style.display = 'block';
         });
       }
       
@@ -247,14 +294,16 @@ export const settingsFunctions = (): string => `
   
   async function loadFeatures() {
     const featuresEl = document.getElementById('featuresLoading');
-    if (!featuresEl) return;
+    const featuresList = document.getElementById('featuresList');
+    const container = document.getElementById('featuresContainer');
+    
+    if (!featuresEl || !featuresList || !container) return;
     
     featuresEl.style.display = 'block';
-    document.getElementById('featuresList').style.display = 'none';
+    featuresList.style.display = 'none';
     
     try {
       const data = await api.get('/settings/features');
-      const container = document.getElementById('featuresContainer');
       
       container.innerHTML = '';
       
@@ -270,7 +319,7 @@ export const settingsFunctions = (): string => `
       }
       
       featuresEl.style.display = 'none';
-      document.getElementById('featuresList').style.display = 'block';
+      featuresList.style.display = 'block';
       
     } catch (err) {
       console.error('Failed to load features:', err);
