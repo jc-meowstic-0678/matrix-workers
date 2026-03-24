@@ -8,30 +8,35 @@ const securityApi = new Hono();
 
 // GET /api/security/sessions - List active sessions
 securityApi.get('/security/sessions', requireAdminAuth, async (c) => {
-  const db = c.env.DB;
-  const limit = Math.min(parseInt(c.req.query('limit') || '100'), 500);
+  try {
+    const db = c.env.DB;
+    const limit = Math.min(parseInt(c.req.query('limit') || '100'), 500);
 
-  const sessions = await db.prepare(`
-    SELECT 
-      at.token_id as id,
-      at.user_id,
-      at.device_id,
-      at.created_at,
-      d.display_name as device_name,
-      d.last_seen_ts,
-      d.last_seen_ip
-    FROM access_tokens at
-    LEFT JOIN devices d ON at.user_id = d.user_id AND at.device_id = d.device_id
-    ORDER BY at.created_at DESC
-    LIMIT ?
-  `).bind(limit).all();
+    const sessions = await db.prepare(`
+      SELECT 
+        at.token_id as id,
+        at.user_id,
+        at.device_id,
+        at.created_at,
+        d.display_name as device_name,
+        d.last_seen_ts,
+        d.last_seen_ip
+      FROM access_tokens at
+      LEFT JOIN devices d ON at.user_id = d.user_id AND at.device_id = d.device_id
+      ORDER BY at.created_at DESC
+      LIMIT ?
+    `).bind(limit).all();
 
-  const total = await db.prepare('SELECT COUNT(*) as count FROM access_tokens').first<{ count: number }>();
+    const total = await db.prepare('SELECT COUNT(*) as count FROM access_tokens').first<{ count: number }>();
 
-  return c.json({
-    sessions: sessions.results,
-    total: total?.count || 0,
-  });
+    return c.json({
+      sessions: sessions.results || [],
+      total: total?.count || 0,
+    });
+  } catch (error) {
+    console.error('Failed to fetch sessions:', error);
+    return c.json({ error: 'Failed to fetch sessions', sessions: [], total: 0 }, 500);
+  }
 });
 
 // GET /api/security/sessions/:sessionId - Get session details
