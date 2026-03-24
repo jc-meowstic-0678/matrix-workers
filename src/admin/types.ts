@@ -93,6 +93,7 @@ export interface ServerStats {
   activeUsers: number;
   totalRooms: number;
   federationOk: boolean;
+  knownServers?: number;
   mediaCount?: number;
   mediaSize?: number;
   unresolvedReports?: number;

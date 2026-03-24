@@ -16,20 +16,22 @@ statsApi.get('/stats', requireAdminAuth, async (c) => {
       db.prepare('SELECT COUNT(*) as count FROM users WHERE last_seen_ts > ?')
         .bind(Date.now() - 24 * 60 * 60 * 1000).first<{ count: number }>(),
       db.prepare('SELECT COUNT(*) as count FROM rooms').first<{ count: number }>(),
-      db.prepare('SELECT COUNT(*) as count FROM servers WHERE last_successful_fetch > ?')
-        .bind(Date.now() - 3600000).first<{ count: number }>()
+      db.prepare('SELECT COUNT(*) as count FROM servers').first<{ count: number }>(),
+      db.prepare('SELECT COUNT(*) as count FROM server_keys WHERE is_current = 1').first<{ count: number }>()
     ]);
 
     const totalUsers = results[0].status === 'fulfilled' ? results[0].value?.count || 0 : 0;
     const activeUsers = results[1].status === 'fulfilled' ? results[1].value?.count || 0 : 0;
     const totalRooms = results[2].status === 'fulfilled' ? results[2].value?.count || 0 : 0;
-    const federationStatus = results[3].status === 'fulfilled' ? results[3].value?.count || 0 : 0;
+    const knownServers = results[3].status === 'fulfilled' ? results[3].value?.count || 0 : 0;
+    const hasSigningKeys = results[4].status === 'fulfilled' && (results[4].value?.count || 0) > 0;
 
     return c.json<ServerStats>({
       totalUsers,
       activeUsers,
       totalRooms,
-      federationOk: federationStatus > 0
+      federationOk: hasSigningKeys,
+      knownServers
     });
   } catch (error) {
     console.error('Failed to fetch admin stats:', error);
