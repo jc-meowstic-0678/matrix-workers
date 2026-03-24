@@ -11,7 +11,7 @@ statsApi.get('/stats', requireAdminAuth, async (c) => {
   const db = c.env.DB;
   
   try {
-    const [totalUsers, activeUsers, totalRooms, federationStatus] = await Promise.all([
+    const results = await Promise.allSettled([
       db.prepare('SELECT COUNT(*) as count FROM users').first<{ count: number }>(),
       db.prepare('SELECT COUNT(*) as count FROM users WHERE last_seen_ts > ?')
         .bind(Date.now() - 24 * 60 * 60 * 1000).first<{ count: number }>(),
@@ -20,11 +20,16 @@ statsApi.get('/stats', requireAdminAuth, async (c) => {
         .bind(Date.now() - 3600000).first<{ count: number }>()
     ]);
 
+    const totalUsers = results[0].status === 'fulfilled' ? results[0].value?.count || 0 : 0;
+    const activeUsers = results[1].status === 'fulfilled' ? results[1].value?.count || 0 : 0;
+    const totalRooms = results[2].status === 'fulfilled' ? results[2].value?.count || 0 : 0;
+    const federationStatus = results[3].status === 'fulfilled' ? results[3].value?.count || 0 : 0;
+
     return c.json<ServerStats>({
-      totalUsers: totalUsers?.count || 0,
-      activeUsers: activeUsers?.count || 0,
-      totalRooms: totalRooms?.count || 0,
-      federationOk: (federationStatus?.count || 0) > 0
+      totalUsers,
+      activeUsers,
+      totalRooms,
+      federationOk: federationStatus > 0
     });
   } catch (error) {
     console.error('Failed to fetch admin stats:', error);
