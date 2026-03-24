@@ -2,6 +2,7 @@
 // UPDATED: Now uses queue-based notification system for scalability
 
 import type { User, Device, Room, PDU, Membership, Env } from '../types';
+import { indexUserFts, removeUserFts, indexEventFts } from './fts-indexer';
 
 // ============================================
 // Queue Helpers
@@ -31,6 +32,8 @@ export async function createUser(
     `INSERT INTO users (user_id, localpart, password_hash, is_guest, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?)`
   ).bind(userId, localpart, passwordHash, isGuest ? 1 : 0, Date.now(), Date.now()).run();
+  
+  await indexUserFts(db, userId, localpart);
 }
 
 export async function getUserById(db: D1Database, userId: string): Promise<User | null> {

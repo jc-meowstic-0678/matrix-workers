@@ -6,6 +6,7 @@ import type { User, CreateUserRequest, UpdateUserRequest, ResetPasswordRequest, 
 import { requireAdminAuth } from '../auth';
 import { hashPassword } from '../../utils/crypto';
 import { formatUserId } from '../../utils/ids';
+import { indexUserFts, searchUsersFts } from '../../services/fts-indexer';
 
 type AdminApiEnv = { Bindings: Env; Variables: Variables };
 
@@ -25,6 +26,26 @@ usersApi.get('/users', requireAdminAuth, async (c) => {
   const params: any[] = [];
 
   if (search) {
+    try {
+      const ftsResults = await searchUsersFts(db, search, limit + offset + 1);
+      if (ftsResults.length > 0) {
+        const userIds = ftsResults.map(r => r.user_id);
+        const userPlaceholders = userIds.map(() => '?').join(',');
+        const ftsQuery = `SELECT user_id, localpart, display_name, admin, is_deactivated, created_at 
+          FROM users WHERE user_id IN (${userPlaceholders}) ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+        const users = await db.prepare(ftsQuery).bind(...userIds, limit, offset).all<User>();
+        return c.json<PaginatedResponse<User>>({
+          items: users.results,
+          total: userIds.length,
+          limit,
+          offset,
+          next_offset: userIds.length > offset + limit ? offset + limit : undefined,
+        });
+      }
+    } catch {
+      // FTS failed, fall back to LIKE search
+    }
+    
     query += ' WHERE localpart LIKE ? OR display_name LIKE ?';
     params.push(`%${search}%`, `%${search}%`);
   }
@@ -76,6 +97,8 @@ usersApi.post('/users', requireAdminAuth, async (c) => {
       Date.now(),
       Date.now()
     ).run();
+
+    await indexUserFts(db, userId, body.username, body.display_name);
 
     return c.json({ success: true, user_id: userId });
   } catch (error: any) {
