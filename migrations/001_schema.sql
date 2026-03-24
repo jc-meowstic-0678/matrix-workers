@@ -227,9 +227,11 @@ CREATE TABLE IF NOT EXISTS server_keys (
     key_id TEXT PRIMARY KEY,
     public_key TEXT NOT NULL,
     private_key TEXT NOT NULL,                   -- Encrypted
+    private_key_jwk TEXT,                      -- JSON Web Key format for Ed25519
     valid_from INTEGER NOT NULL,
     valid_until INTEGER,
-    is_current INTEGER DEFAULT 1
+    is_current INTEGER DEFAULT 1,
+    key_version INTEGER DEFAULT 2
 );
 
 -- Stream position tracking for sync
