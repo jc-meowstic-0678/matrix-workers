@@ -81,7 +81,7 @@ export class D1ConnectionPool {
     
     // Queue the request with timeout
     return new Promise((resolve, reject) => {
-      const startTime = Date.now();
+      // Request timing tracked by Promise resolution time
       
       const timeoutId = setTimeout(() => {
         // Remove this request from queue
@@ -170,12 +170,13 @@ export class D1ConnectionPool {
       
       return result.results || [];
     } catch (error) {
+      const errMsg = error instanceof Error ? error.message : 'Unknown error';
       console.error('Query execution failed:', {
-        query: query.substring(0, 100), // Log first 100 chars
+        query: query.substring(0, 100),
         params,
-        error: error.message
+        error: errMsg
       });
-      throw new Error(`Database query failed: ${error.message}`);
+      throw new Error(`Database query failed: ${errMsg}`);
     } finally {
       this.releaseConnection();
     }
