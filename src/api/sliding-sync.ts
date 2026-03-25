@@ -470,7 +470,8 @@ app.get('/v3/sync', requireAuth(), async (c: Context) => {
     });
   } catch (error) {
     console.error('Legacy sync error:', error);
-    return c.json(Errors.internal(error.message), 500);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return c.json(Errors.internal(message), 500);
   }
 });
 

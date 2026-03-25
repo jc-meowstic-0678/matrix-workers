@@ -20,6 +20,7 @@ interface SlidingSyncRequest {
   extensions?: ExtensionsRequest;
   pos?: string;
   timeout?: number;
+  room_subscriptions?: Record<string, RoomSubscription>;
 }
 
 interface ListConfig {
@@ -89,6 +90,7 @@ interface RoomResult {
   bump_stamp?: number;
   is_dm?: boolean;
   membership?: string;
+  state?: any[];
 }
 
 interface ExtensionsResponse {
@@ -110,7 +112,6 @@ interface ListConfigWithId extends ListConfig {
 
 export class OptimizedSlidingSyncHandler {
   private readonly MAX_CONCURRENT_LISTS = 5;
-  private readonly DEFAULT_TIMEOUT = 30_000; // 30 seconds
   private readonly MAX_TIMELINE_LIMIT = 100;
   
   private cache: CachedSlidingSyncHandler;
@@ -119,7 +120,7 @@ export class OptimizedSlidingSyncHandler {
   private monitor: SlidingSyncMonitor;
   private db: D1Database;
 
-  constructor(private env: Env) {
+  constructor(env: Env) {
     this.db = env.DB;
     this.cache = createCachedSlidingSyncHandler(env);
     this.pool = createConnectionPool(env);
@@ -137,22 +138,13 @@ export class OptimizedSlidingSyncHandler {
     try {
       // Parse request
       const body = await this.parseRequestBody(request);
-      const { lists = {}, extensions = {}, pos: since } = body;
+      const { lists = {}, extensions = {}, pos: _since, room_subscriptions = {} } = body;
+      const since = _since ?? null;
 
-        // If the request has room_subscriptions, fetch them as a separate “list”
-    if (body.room_subscriptions) {
-    const subRooms = Object.keys(body.room_subscriptions);
-    const subConfig = body.room_subscriptions; // each may have its own timeline_limit etc.
-  // For simplicity, treat all subscriptions as one list with a custom handler.
-  // You can merge them into the list results or return a separate section.
- }
-
- if (!deviceId) {
-  console.warn(`No deviceId for user ${userId}, to-device messages will be empty`);
-  // Optionally set deviceId to a default like '' but queries may fail.
-  // Better to skip to-device processing.
-}
-      
+      if (!deviceId) {
+        console.warn(`No deviceId for user ${userId}, to-device messages will be empty`);
+      }
+       
       // Validate request
       this.validateRequest(body);
       
@@ -164,20 +156,22 @@ export class OptimizedSlidingSyncHandler {
         this.MAX_CONCURRENT_LISTS
       );
       
+      // Process room subscriptions (full room data for specific rooms)
+      const subscriptionResults = await this.processRoomSubscriptions(
+        userId,
+        room_subscriptions,
+        since
+      );
+      
       // Process extensions (to-device, typing, receipts, etc.)
       const extensionResults = await this.processExtensions(userId, deviceId, extensions, since);
       
-    //   // Generate next batch token
-    //   const nextBatch = `s${nextPos}`;
-      
-    //   // Track performance metrics
-    //   const nextPos = await getCurrentStreamPosition(db);
-    //   const nextBatch = `s${nextPos}`;
-    const processingTime = Date.now() - startTime; //Added
-    this.monitor.trackSyncDuration(userId, processingTime, Object.keys(lists).length);
+      // Track performance metrics
+      const processingTime = Date.now() - startTime;
+      this.monitor.trackSyncDuration(userId, processingTime, Object.keys(lists).length);
       
       // Build response
-      const response = this.buildResponse(listResults, extensionResults, nextBatch);
+      const response = this.buildResponse(listResults, extensionResults, nextBatch, subscriptionResults);
       
       return Response.json(response, {
         headers: {
@@ -477,11 +471,11 @@ export class OptimizedSlidingSyncHandler {
    * Generate list operations for incremental sync
    */
   private async generateListOps(
-    userId: string,
-    config: ListConfigWithId,
+    _userId: string,
+    _config: ListConfigWithId,
     currentRooms: string[],
     previousRooms: string[],
-    since: string
+    _since: string
   ): Promise<RoomListOperation[]> {
     const ops: RoomListOperation[] = [];
     
@@ -497,6 +491,112 @@ export class OptimizedSlidingSyncHandler {
     }
     
     return ops;
+  }
+
+  /**
+   * Process room subscriptions - fetch full room data for specific rooms
+   */
+  private async processRoomSubscriptions(
+    userId: string,
+    subscriptions: Record<string, RoomSubscription>,
+    since: string | null
+  ): Promise<Record<string, RoomResult>> {
+    const results: Record<string, RoomResult> = {};
+    
+    if (Object.keys(subscriptions).length === 0) {
+      return results;
+    }
+    
+    // Process each subscription
+    const roomIds = Object.keys(subscriptions);
+    
+    for (const roomId of roomIds) {
+      const config = subscriptions[roomId];
+      const timelineLimit = config.timeline_limit ?? 20;
+      
+      try {
+        // Fetch room data from database
+        const roomData = await this.fetchRoomData(userId, roomId, config, timelineLimit);
+        results[roomId] = roomData;
+        
+      } catch (error) {
+        console.error(`Failed to fetch room ${roomId}:`, error);
+        results[roomId] = {
+          room_id: roomId,
+          name: 'Unknown Room',
+          timeline: [],
+          state: []
+        };
+      }
+    }
+    
+    return results;
+  }
+
+  /**
+   * Fetch room data from database
+   */
+  private async fetchRoomData(
+    userId: string,
+    roomId: string,
+    config: RoomSubscription,
+    timelineLimit: number
+  ): Promise<RoomResult> {
+    // Get room state
+    const stateQuery = await this.db.prepare(`
+      SELECT event_id, type, state_key, sender, content, origin_server_ts, depth
+      FROM room_state
+      WHERE room_id = ?
+      ORDER BY depth ASC
+      LIMIT 100
+    `).bind(roomId).all();
+    
+    const state = (stateQuery.results || []).map((row: any) => ({
+      event_id: row.event_id,
+      type: row.type,
+      state_key: row.state_key,
+      sender: row.sender,
+      content: typeof row.content === 'string' ? JSON.parse(row.content) : row.content,
+      origin_server_ts: row.origin_server_ts,
+      depth: row.depth
+    }));
+    
+    // Get room timeline
+    const timelineQuery = await this.db.prepare(`
+      SELECT event_id, type, state_key, sender, content, origin_server_ts, depth, unsigned
+      FROM events
+      WHERE room_id = ? AND event_type = 'm.room.message'
+      ORDER BY origin_server_ts DESC
+      LIMIT ?
+    `).bind(roomId, timelineLimit).all();
+    
+    const timeline = (timelineQuery.results || []).reverse().map((row: any) => ({
+      event_id: row.event_id,
+      type: row.type,
+      state_key: row.state_key,
+      sender: row.sender,
+      content: typeof row.content === 'string' ? JSON.parse(row.content) : row.content,
+      origin_server_ts: row.origin_server_ts,
+      depth: row.depth,
+      unsigned: row.unsigned
+    }));
+    
+    // Get room metadata
+    const roomQuery = await this.db.prepare(`
+      SELECT name, topic, avatar_url, canonical_alias, is_public
+      FROM rooms WHERE room_id = ?
+    `).bind(roomId).first<{ name: string | null; topic: string | null; avatar_url: string | null; canonical_alias: string | null; is_public: number }>();
+    
+    return {
+      room_id: roomId,
+      name: roomQuery?.name ?? undefined,
+      topic: roomQuery?.topic ?? undefined,
+      avatar: roomQuery?.avatar_url ?? undefined,
+      canonical_alias: roomQuery?.canonical_alias ?? undefined,
+      required_state: state,
+      timeline,
+      prev_batch: timeline.length > 0 ? String(timeline[0].origin_server_ts) : undefined
+    };
   }
 
   /**
@@ -666,13 +766,21 @@ private async processE2EE(
   private buildResponse(
     lists: Record<string, ListResult>,
     extensions: ExtensionsResponse,
-    nextBatch: string
+    nextBatch: string,
+    roomSubscriptions: Record<string, RoomResult> = {}
   ): any {
-    return {
+    const response: any = {
       pos: nextBatch,
       lists,
       extensions
     };
+    
+    // Add room subscriptions if present
+    if (Object.keys(roomSubscriptions).length > 0) {
+      response.rooms = roomSubscriptions;
+    }
+    
+    return response;
   }
 
   /**
