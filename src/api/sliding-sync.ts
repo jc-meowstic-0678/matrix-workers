@@ -165,8 +165,8 @@ export interface ExtensionsResponse {
   presence?: { events?: any[] };
 }
 
-// Connection state (kept for backward compatibility)
-interface ConnectionState {
+// Connection state (kept for backward compatibility - unused)
+export interface ConnectionState {
   userId: string;
   pos: number;
   lastAccess: number;
@@ -199,7 +199,7 @@ app.post('/v1/sync', requireAuth(), async (c: Context) => {
 
     if (useStreaming) {
       // Delegate to streaming handler
-      return await streamingHandler.handleSlidingSyncStreaming(c.req.raw, userId);
+      return await streamingHandler.handleSlidingSyncStreaming(c.req.raw, userId, deviceId);
     }
 
     // Use optimized handler for standard JSON response
@@ -299,7 +299,8 @@ app.post('/v1/sync/precompute', requireAuth(), async (c: Context) => {
     });
   } catch (error) {
     console.error('Precompute error:', error);
-    return c.json(Errors.internal(error.message), 500);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return c.json(Errors.internal(message), 500);
   }
 });
 
@@ -312,7 +313,6 @@ app.get('/v1/sync/health', async (c: Context) => {
   
   try {
     const health = monitor.getHealthStatus();
-    const metrics = monitor.getMetrics();
     const queueStatus = pool.getQueueStatus();
     
     return c.json({
@@ -320,14 +320,12 @@ app.get('/v1/sync/health', async (c: Context) => {
       timestamp: Date.now(),
       metrics: {
         ...health.metrics,
-        total_requests: metrics.totalRequests,
-        active_connections: metrics.activeConnections,
-        queued_requests: queueStatus.length,
-        p95_latency: metrics.waitTime
+        queued_requests: queueStatus.length
       }
     });
   } catch (error) {
-    return c.json({ status: 'degraded', error: error.message }, 503);
+    const errMsg = error instanceof Error ? error.message : 'Unknown error';
+    return c.json({ status: 'degraded', error: errMsg }, 503);
   }
 });
 
@@ -350,7 +348,8 @@ app.post('/v1/sync/invalidate', requireAuth(), async (c: Context) => {
     
     return c.json({ success: true });
   } catch (error) {
-    return c.json(Errors.internal(error.message), 500);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return c.json(Errors.internal(message), 500);
   }
 });
 
@@ -389,15 +388,15 @@ app.get('/v3/sync', requireAuth(), async (c: Context) => {
     });
     
     const response = await optimizedHandler.handleSlidingSync(request, userId, deviceId);
-    const data = await response.json();
+    const data = await response.json() as { pos?: string; lists?: { rooms?: { rooms?: Record<string, unknown> } } };
     
     // Transform sliding sync response to legacy format
     // This is a simplified transformation - real one would be more complex
     return c.json({
-      next_batch: data.pos,
+      next_batch: data.pos ?? '',
       rooms: {
         join: Object.fromEntries(
-          Object.entries(data.lists.rooms?.rooms || {})
+          Object.entries(data.lists?.rooms?.rooms || {})
             .map(([id, _room]) => [id, { timeline: { events: [] } }])
         )
       }
@@ -435,7 +434,8 @@ app.get('/v1/sync/metrics', requireAuth(), async (c: Context) => {
       instance_id: monitor.getInstanceId()
     });
   } catch (error) {
-    return c.json(Errors.internal(error.message), 500);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return c.json(Errors.internal(message), 500);
   }
 });
 

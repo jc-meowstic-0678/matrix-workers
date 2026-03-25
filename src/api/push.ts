@@ -1189,7 +1189,7 @@ async function sendViaSygnal(
         counts: counts,
         devices: [{
           app_id: pusher.app_id,
-          pushkey: pusher.pushkey,
+          pushkey: _pusher.pushkey,
           pushkey_ts: Date.now(),
           data: pusherDataForGateway,
         }],
@@ -1241,7 +1241,7 @@ async function sendDirectAPNs(
   counts: { unread: number; missed_calls?: number }
 ): Promise<boolean> {
   try {
-    const pushDO = env.PUSH;
+    const pushDO = _env.PUSH;
     const doId = pushDO.idFromName('apns');
     const stub = pushDO.get(doId);
 
@@ -1280,7 +1280,7 @@ async function sendDirectAPNs(
       unread_count: counts.unread,
     };
 
-    const topic = pusher.app_id.replace(/\.ios$/, '').replace(/\.prod$/, '').replace(/\.dev$/, '');
+    const topic = _pusher.app_id.replace(/\.ios$/, '').replace(/\.prod$/, '').replace(/\.dev$/, '');
 
     console.log('[push] Sending direct APNs via Push DO');
 
@@ -1288,7 +1288,7 @@ async function sendDirectAPNs(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        pushkey: pusher.pushkey,
+        pushkey: _pusher.pushkey,
         topic,
         payload: apnsPayload,
         priority: 10,
