@@ -4,7 +4,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
-import type { AppEnv } from './types';
+import type { AppEnv, Env } from './types';
 
 // Import API routes
 import versions from './api/versions';

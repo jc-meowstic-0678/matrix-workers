@@ -82,7 +82,7 @@ roomsApi.post('/rooms/create', requireAdminAuth, async (c) => {
 
 // GET /api/rooms/:roomId - Get room details
 roomsApi.get('/rooms/:roomId', requireAdminAuth, async (c) => {
-  const roomId = decodeURIComponent(c.req.param('roomId'));
+  const roomId = decodeURIComponent(c.req.param('roomId') || '');
   const db = c.env.DB;
 
   const room = await db.prepare(`
@@ -137,7 +137,7 @@ roomsApi.get('/rooms/:roomId', requireAdminAuth, async (c) => {
 
 // DELETE /api/rooms/:roomId - Delete room
 roomsApi.delete('/rooms/:roomId', requireAdminAuth, async (c) => {
-  const roomId = decodeURIComponent(c.req.param('roomId'));
+  const roomId = decodeURIComponent(c.req.param('roomId') || '');
   const db = c.env.DB;
 
   await db.prepare('DELETE FROM room_aliases WHERE room_id = ?').bind(roomId).run();

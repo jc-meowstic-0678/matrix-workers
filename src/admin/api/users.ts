@@ -111,7 +111,7 @@ usersApi.post('/users', requireAdminAuth, async (c) => {
 
 // GET /api/users/:userId - Get user details
 usersApi.get('/users/:userId', requireAdminAuth, async (c) => {
-  const userId = decodeURIComponent(c.req.param('userId'));
+  const userId = decodeURIComponent(c.req.param('userId') || '');
   const db = c.env.DB;
 
   const user = await db.prepare(`
@@ -140,7 +140,7 @@ usersApi.get('/users/:userId', requireAdminAuth, async (c) => {
 
 // PUT /api/users/:userId - Update user
 usersApi.put('/users/:userId', requireAdminAuth, async (c) => {
-  const userId = decodeURIComponent(c.req.param('userId'));
+  const userId = decodeURIComponent(c.req.param('userId') || '');
   const db = c.env.DB;
   const body = await c.req.json<UpdateUserRequest>();
 
@@ -175,7 +175,7 @@ usersApi.put('/users/:userId', requireAdminAuth, async (c) => {
 
 // DELETE /api/users/:userId - Deactivate user
 usersApi.delete('/users/:userId', requireAdminAuth, async (c) => {
-  const userId = decodeURIComponent(c.req.param('userId'));
+  const userId = decodeURIComponent(c.req.param('userId') || '');
   const db = c.env.DB;
 
   await db.prepare('UPDATE users SET is_deactivated = 1, updated_at = ? WHERE user_id = ?')
@@ -188,7 +188,7 @@ usersApi.delete('/users/:userId', requireAdminAuth, async (c) => {
 
 // POST /api/users/:userId/reset-password - Reset password
 usersApi.post('/users/:userId/reset-password', requireAdminAuth, async (c) => {
-  const userId = decodeURIComponent(c.req.param('userId'));
+  const userId = decodeURIComponent(c.req.param('userId') || '');
   const db = c.env.DB;
   const body = await c.req.json<ResetPasswordRequest>();
 
@@ -208,7 +208,7 @@ usersApi.post('/users/:userId/reset-password', requireAdminAuth, async (c) => {
 
 // POST /api/users/:userId/reactivate - Reactivate user
 usersApi.post('/users/:userId/reactivate', requireAdminAuth, async (c) => {
-  const userId = decodeURIComponent(c.req.param('userId'));
+  const userId = decodeURIComponent(c.req.param('userId') || '');
   const db = c.env.DB;
 
   await db.prepare('UPDATE users SET is_deactivated = 0, updated_at = ? WHERE user_id = ?')
@@ -219,7 +219,7 @@ usersApi.post('/users/:userId/reactivate', requireAdminAuth, async (c) => {
 
 // GET /api/users/:userId/sessions - Get user sessions
 usersApi.get('/users/:userId/sessions', requireAdminAuth, async (c) => {
-  const userId = decodeURIComponent(c.req.param('userId'));
+  const userId = decodeURIComponent(c.req.param('userId') || '');
   const db = c.env.DB;
 
   const sessions = await db.prepare(`

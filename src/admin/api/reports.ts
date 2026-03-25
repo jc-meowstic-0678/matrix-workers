@@ -65,7 +65,7 @@ reportsApi.get('/reports/unresolved/count', requireAdminAuth, async (c) => {
 
 // GET /api/reports/:reportId - Get specific report
 reportsApi.get('/reports/:reportId', requireAdminAuth, async (c) => {
-  const reportId = c.req.param('reportId');
+  const reportId = c.req.param('reportId') || '';
   const db = c.env.DB;
 
   const report = await db.prepare(`
@@ -85,7 +85,7 @@ reportsApi.get('/reports/:reportId', requireAdminAuth, async (c) => {
 // POST /api/reports/:reportId/resolve - Resolve report
 reportsApi.post('/reports/:reportId/resolve', requireAdminAuth, async (c) => {
   const userId = c.get('userId');
-  const reportId = c.req.param('reportId');
+  const reportId = c.req.param('reportId') || '';
   const db = c.env.DB;
 
   let body: { note?: string } = {};
@@ -110,7 +110,7 @@ reportsApi.post('/reports/:reportId/resolve', requireAdminAuth, async (c) => {
 
 // POST /api/reports/:reportId/unresolve - Unresolve report
 reportsApi.post('/reports/:reportId/unresolve', requireAdminAuth, async (c) => {
-  const reportId = c.req.param('reportId');
+  const reportId = c.req.param('reportId') || '';
   const db = c.env.DB;
 
   const result = await db.prepare(`

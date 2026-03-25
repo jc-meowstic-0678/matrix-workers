@@ -54,7 +54,7 @@ mediaApi.get('/media/stats', requireAdminAuth, async (c) => {
 
 // POST /api/media/:mediaId/quarantine - Quarantine media
 mediaApi.post('/media/:mediaId/quarantine', requireAdminAuth, async (c) => {
-  const mediaId = c.req.param('mediaId');
+  const mediaId = c.req.param('mediaId') || '';
   const db = c.env.DB;
 
   const result = await db.prepare(
@@ -70,7 +70,7 @@ mediaApi.post('/media/:mediaId/quarantine', requireAdminAuth, async (c) => {
 
 // POST /api/media/:mediaId/unquarantine - Remove from quarantine
 mediaApi.post('/media/:mediaId/unquarantine', requireAdminAuth, async (c) => {
-  const mediaId = c.req.param('mediaId');
+  const mediaId = c.req.param('mediaId') || '';
   const db = c.env.DB;
 
   const result = await db.prepare(
@@ -86,7 +86,7 @@ mediaApi.post('/media/:mediaId/unquarantine', requireAdminAuth, async (c) => {
 
 // DELETE /api/media/:mediaId - Delete media
 mediaApi.delete('/media/:mediaId', requireAdminAuth, async (c) => {
-  const mediaId = c.req.param('mediaId');
+  const mediaId = c.req.param('mediaId') || '';
   const db = c.env.DB;
 
   // Get media info for R2 deletion

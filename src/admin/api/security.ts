@@ -146,7 +146,7 @@ securityApi.get('/security/server-key', requireAdminAuth, async (c) => {
 
 // GET /api/security/secrets-status - Check which secrets are configured
 securityApi.get('/security/secrets-status', requireAdminAuth, async (c) => {
-  const env = c.env as Record<string, unknown>;
+  const env = c.env as unknown as Record<string, unknown>;
   
   return c.json({
     secrets: {

@@ -11,7 +11,7 @@
 // even when the app is not running.
 
 import { Hono } from 'hono';
-import type { AppEnv } from '../types';
+import type { AppEnv, Env } from '../types';
 import { Errors } from '../utils/errors';
 import { requireAuth } from '../middleware/auth';
 
