@@ -102,7 +102,7 @@ interface ExtensionsResponse {
   presence?: { events?: any[] };
 }
 
-interface ListConfigWithId extends ListConfig {
+export interface ListConfigWithId extends ListConfig {
   id: string;
 }
 
@@ -494,12 +494,12 @@ export class OptimizedSlidingSyncHandler {
   }
 
   /**
-   * Process room subscriptions - fetch full room data for specific rooms
-   */
+    * Process room subscriptions - fetch full room data for specific rooms
+    */
   private async processRoomSubscriptions(
-    _userId: string,
+    userId: string,
     subscriptions: Record<string, RoomSubscription>,
-    _since: string | null
+    since: string | null
   ): Promise<Record<string, RoomResult>> {
     const results: Record<string, RoomResult> = {};
     
@@ -534,12 +534,12 @@ export class OptimizedSlidingSyncHandler {
   }
 
   /**
-   * Fetch room data from database
-   */
+    * Fetch room data from database
+    */
   private async fetchRoomData(
     _userId: string,
     roomId: string,
-    _config: RoomSubscription,
+    config: RoomSubscription,
     timelineLimit: number
   ): Promise<RoomResult> {
     // Get room state

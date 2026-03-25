@@ -138,7 +138,7 @@ app.get('/_matrix/key/v2/server', async (c) => {
 // CORS headers for federation
 // ============================================
 // Add CORS headers to allow federation from other servers
-app.use('/*', async (c, next) => {
+app.use('/*', async (c, next): Promise<Response | void> => {
   if (c.req.method === 'OPTIONS') {
     return c.json({}, 200, {
       'Access-Control-Allow-Origin': '*',
@@ -186,7 +186,7 @@ async function ensureRoomExists(db: D1Database, roomId: string, version: string)
 // Helper: Validate event signatures and hashes
 // Note: Currently unused but kept for future implementation
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function _validateEvent(event: PDU, _serverName: string): Promise<{ valid: boolean; error?: string }> {
+function _validateEvent(_event: PDU, _serverName: string): { valid: boolean; error?: string } {
   return { valid: true };
 }
 
@@ -197,7 +197,7 @@ async function _validateEvent(event: PDU, _serverName: string): Promise<{ valid:
 app.put('/_matrix/federation/v1/send/:txnId', async (c) => {
   const txnId = c.req.param('txnId');
   const origin = c.req.header('X-Matrix-Origin') || '';
-  const destination = c.env.SERVER_NAME;
+  const _destination = c.env.SERVER_NAME;
   const db = c.env.DB;
 
   // Parse incoming transaction
@@ -228,7 +228,7 @@ app.put('/_matrix/federation/v1/send/:txnId', async (c) => {
   }
 
   const pdus = body.pdus || [];
-  const edus = body.edus || [];
+  const _edus = body.edus || [];
 
   // Process PDUs
   const pduResults: Record<string, Record<string, any>> = {};

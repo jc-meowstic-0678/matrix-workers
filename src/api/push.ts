@@ -1189,7 +1189,7 @@ async function sendViaSygnal(
         counts: counts,
         devices: [{
           app_id: pusher.app_id,
-          pushkey: _pusher.pushkey,
+          pushkey: pusher.pushkey,
           pushkey_ts: Date.now(),
           data: pusherDataForGateway,
         }],
