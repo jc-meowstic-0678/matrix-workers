@@ -21,9 +21,11 @@ export interface Env {
   USER_KEYS_DO: DurableObjectNamespace;
   PUSH: DurableObjectNamespace;
   RATE_LIMIT: DurableObjectNamespace;
-  DEVICE_KEYS: DurableObjectNamespace;
-  CROSS_SIGNING_KEYS: DurableObjectNamespace;
   ROOM_NOTIFICATION_QUEUE: DurableObjectNamespace;
+
+  // KV Namespaces for keys (legacy - should migrate to DO)
+  DEVICE_KEYS: KVNamespace;
+  CROSS_SIGNING_KEYS: KVNamespace;
 
   // Environment variables
   SERVER_NAME: string;

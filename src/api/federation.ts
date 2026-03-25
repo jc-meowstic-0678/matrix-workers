@@ -330,7 +330,7 @@ app.put('/_matrix/federation/v1/send/:txnId', async (c) => {
 
       const authCheck = checkEventAuth(event as PDU, stateEvents, roomVersion);
       if (!authCheck.allowed) {
-        pduResults[eventId] = { error: { errcode: authCheck.errcode || 'M_FORBIDDEN', error: authCheck.error } };
+        pduResults[eventId] = { error: { errcode: 'M_FORBIDDEN', error: authCheck.error || 'Forbidden' } };
         continue;
       }
 
@@ -749,7 +749,7 @@ app.put('/_matrix/federation/v1/send_join/:roomId/:eventId', async (c) => {
   if (!keyId) {
     return c.json({ error: 'Missing signature' }, 403);
   }
-  const keyValid = await verifyRemoteSignature(joinEvent, origin, keyId, db, c.env.CACHE);
+  const keyValid = await verifyRemoteSignature(joinEvent as unknown as Record<string, unknown>, origin, keyId, db, c.env.CACHE);
   if (!keyValid) {
     return c.json({ error: 'Invalid signature' }, 403);
   }
@@ -802,7 +802,7 @@ app.put('/_matrix/federation/v1/send_leave/:roomId/:eventId', async (c) => {
   if (!keyId) {
     return c.json({ error: 'Missing signature' }, 403);
   }
-  const keyValid = await verifyRemoteSignature(leaveEvent, origin, keyId, db, c.env.CACHE);
+  const keyValid = await verifyRemoteSignature(leaveEvent as unknown as Record<string, unknown>, origin, keyId, db, c.env.CACHE);
   if (!keyValid) {
     return c.json({ error: 'Invalid signature' }, 403);
   }
@@ -847,7 +847,7 @@ app.put('/_matrix/federation/v2/invite/:roomId/:eventId', async (c) => {
   if (!keyId) {
     return c.json({ error: 'Missing signature' }, 403);
   }
-  const keyValid = await verifyRemoteSignature(inviteEvent, origin, keyId, db, c.env.CACHE);
+  const keyValid = await verifyRemoteSignature(inviteEvent as unknown as Record<string, unknown>, origin, keyId, db, c.env.CACHE);
   if (!keyValid) {
     return c.json({ error: 'Invalid signature' }, 403);
   }
