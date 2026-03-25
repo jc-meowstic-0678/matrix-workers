@@ -182,14 +182,14 @@ interface ConnectionState {
 // Helper Functions (optimized to use new components)
 // ============================================
 
-async function getCurrentStreamPosition(db: D1Database): Promise<number> {
+async function _getCurrentStreamPosition(db: D1Database): Promise<number> {
   const result = await db.prepare(
     `SELECT MAX(stream_ordering) as max_pos FROM events`
   ).first<{ max_pos: number | null }>();
   return result?.max_pos ?? 0;
 }
 
-async function getConnectionState(
+async function _getConnectionState(
   syncDO: DurableObjectNamespace,
   userId: string,
   connId: string

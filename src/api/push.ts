@@ -1227,7 +1227,7 @@ async function sendViaSygnal(
 async function sendDirectAPNs(
   _env: Env,
   _pusher: { pushkey: string; app_id: string },
-  pusherData: PusherData,
+  _pusherData: PusherData,
   event: {
     event_id: string;
     room_id: string;
