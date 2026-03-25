@@ -31,7 +31,6 @@ import aliases from './api/aliases';
 import relations from './api/relations';
 import spaces from './api/spaces';
 import account from './api/account';
-import search from './api/search';
 import serverNotices from './api/server-notices';
 import report from './api/report';
 import calls from './api/calls';
@@ -72,9 +71,6 @@ export {
   MediaCleanupWorkflow, 
   StateCompactionWorkflow 
 } from './workflows';
-
-// Import Queue handler helper (optional - can be removed if not needed)
-import { sendFederationTransaction } from './consumers/federation-consumer';
 
 // Create the main app
 const app = new Hono<AppEnv>();
@@ -381,7 +377,7 @@ interface FederationQueueMessage {
  * @param env - Environment bindings
  * @param ctx - Execution context
  */
-async function queue(batch: MessageBatch<FederationQueueMessage>, env: Env, ctx: ExecutionContext) {
+async function queue(batch: MessageBatch<FederationQueueMessage>, env: Env, _ctx: ExecutionContext) {
   console.log(`[queue] Processing batch of ${batch.messages.length} messages from queue: ${batch.queue}`);
   
   // Group messages by destination for efficiency

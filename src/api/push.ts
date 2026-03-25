@@ -1054,8 +1054,8 @@ export async function hasActiveWebSocket(
 
     if (!response.ok) return false;
     
-    const { hasWebSocket } = await response.json();
-    return hasWebSocket;
+    const data = await response.json() as { hasWebSocket?: boolean };
+    return data.hasWebSocket ?? false;
   } catch (error) {
     console.error(`[push] Failed to check WebSocket for ${userId}:`, error);
     return false;
@@ -1122,7 +1122,7 @@ export async function sendDeviceNotification(
  * Send notification via Sygnal HTTP gateway
  */
 async function sendViaSygnal(
-  env: Env,
+  _env: Env,
   pusher: { pushkey: string; app_id: string },
   pusherData: PusherData,
   event: {
@@ -1225,8 +1225,8 @@ async function sendViaSygnal(
  * Send notification via direct APNs
  */
 async function sendDirectAPNs(
-  env: Env,
-  pusher: { pushkey: string; app_id: string },
+  _env: Env,
+  _pusher: { pushkey: string; app_id: string },
   pusherData: PusherData,
   event: {
     event_id: string;

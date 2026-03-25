@@ -2,7 +2,7 @@
 // UPDATED: Now uses queue-based notification system for scalability
 
 import type { User, Device, Room, PDU, Membership, Env } from '../types';
-import { indexUserFts, removeUserFts, indexEventFts } from './fts-indexer';
+import { indexUserFts } from './fts-indexer';
 
 // ============================================
 // Queue Helpers
