@@ -7,9 +7,6 @@ import { Hono, type Context } from 'hono';
 import type { AppEnv } from '../types';
 import { Errors } from '../utils/errors';
 import { requireAuth } from '../middleware/auth';
-import { getTypingForRooms } from './typing';
-import { getReceiptsForRooms } from './receipts';
-import { countNotificationsWithRules } from '../services/push-rule-evaluator';
 
 // Import optimized sliding sync components
 import { OptimizedSlidingSyncHandler, createOptimizedSlidingSyncHandler } from './sliding-sync/optimized-sync';
@@ -292,6 +289,7 @@ app.post('/v1/sync', requireAuth(), async (c: Context) => {
 app.get('/v1/sync', requireAuth(), async (c: Context) => {
   const { optimizedHandler } = getHandlers(c);
   const userId = c.get('userId');
+  const deviceId = c.get('deviceId') || '';
   
   try {
     // Convert GET request to internal POST format
@@ -302,7 +300,7 @@ app.get('/v1/sync', requireAuth(), async (c: Context) => {
     // Create a synthetic request for the handler
     const request = new Request(c.req.url, {
       method: 'POST',
-      headers: c.req.headers,
+      headers: c.req.raw.headers,
       body: JSON.stringify({
         pos: since,
         timeout,
@@ -329,6 +327,7 @@ app.get('/v1/sync', requireAuth(), async (c: Context) => {
 app.post('/v1/sync/stream', requireAuth(), async (c: Context) => {
   const { streamingHandler } = getHandlers(c);
   const userId = c.get('userId');
+  const deviceId = c.get('deviceId') || '';
   
   try {
     return await streamingHandler.handleSlidingSyncStreaming(c.req.raw, userId, deviceId);
@@ -429,6 +428,7 @@ app.post('/v1/sync/invalidate', requireAuth(), async (c: Context) => {
 app.get('/v3/sync', requireAuth(), async (c: Context) => {
   const { optimizedHandler } = getHandlers(c);
   const userId = c.get('userId');
+  const deviceId = c.get('deviceId') || '';
   
   try {
     const url = new URL(c.req.url);
@@ -438,7 +438,7 @@ app.get('/v3/sync', requireAuth(), async (c: Context) => {
     // Convert to sliding sync format
     const request = new Request(c.req.url, {
       method: 'POST',
-      headers: c.req.headers,
+      headers: c.req.raw.headers,
       body: JSON.stringify({
         pos: since,
         timeout,

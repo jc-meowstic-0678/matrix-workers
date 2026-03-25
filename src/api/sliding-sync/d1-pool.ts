@@ -14,7 +14,7 @@ interface QueuedRequest {
   resolve: (conn: D1Database) => void;
   reject: (err: Error) => void;
   priority: 'high' | 'low';
-  timeoutId?: NodeJS.Timeout;
+  timeoutId?: ReturnType<typeof setTimeout>;
 }
 
 interface PoolMetrics {

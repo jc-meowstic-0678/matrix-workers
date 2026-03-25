@@ -68,6 +68,10 @@ export const Errors = {
     return new MatrixApiError(ErrorCodes.M_UNKNOWN, message, 500);
   },
 
+  internal(message: string = 'Internal server error'): MatrixApiError {
+    return new MatrixApiError(ErrorCodes.M_UNKNOWN, message, 500);
+  },
+
   unrecognized(message: string = 'Unrecognized request'): MatrixApiError {
     return new MatrixApiError(ErrorCodes.M_UNRECOGNIZED, message, 400);
   },

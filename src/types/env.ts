@@ -8,6 +8,7 @@ export interface Env {
   SESSIONS: KVNamespace;    // Session tokens
   CACHE: KVNamespace;       // Room summaries, precomputed lists
   ACCOUNT_DATA: KVNamespace; // User account data
+  ONE_TIME_KEYS: KVNamespace; // One-time keys for E2EE
 
   // R2 Bucket
   MEDIA: R2Bucket;
@@ -22,6 +23,7 @@ export interface Env {
   RATE_LIMIT: DurableObjectNamespace;
   DEVICE_KEYS: DurableObjectNamespace;
   CROSS_SIGNING_KEYS: DurableObjectNamespace;
+  ROOM_NOTIFICATION_QUEUE: DurableObjectNamespace;
 
   // Environment variables
   SERVER_NAME: string;

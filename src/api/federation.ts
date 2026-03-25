@@ -6,22 +6,16 @@ import { Hono } from 'hono';
 import type { DurableObjectStub } from '@cloudflare/workers-types';
 import type { AppEnv, PDU } from '../types';
 import { Errors } from '../utils/errors';
-import { generateSigningKeyPair, signJson, sha256, verifySignature } from '../utils/crypto';
+import { signJson, sha256 } from '../utils/crypto';
 import { requireFederationAuth } from '../middleware/federation-auth';
 import {
-  getRemoteKeysWithNotarySignature,
   verifyRemoteSignature,
   getServerSigningKey,
-  type ServerKeyResponse,
 } from '../services/federation-keys';
-import { validateUrl } from '../utils/url-validator';
-import { checkEventAuth } from '../services/event-auth';
-import { getRoomState, getEvent, storeEvent, getRoomVersion } from '../services/database';
-import { resolveState } from '../services/state-resolution';
-import { generateEventId } from '../utils/ids';
 
-// Supported room versions (v1-v12 per Matrix Spec v1.17)
-const SUPPORTED_ROOM_VERSIONS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+import { checkEventAuth } from '../services/event-auth';
+import { getEvent, storeEvent, getRoomVersion } from '../services/database';
+import { generateEventId } from '../utils/ids';
 
 const app = new Hono<AppEnv>();
 
@@ -190,7 +184,7 @@ async function ensureRoomExists(db: D1Database, roomId: string, version: string)
 }
 
 // Helper: Validate event signatures and hashes
-async function validateEvent(event: PDU, serverName: string): Promise<{ valid: boolean; error?: string }> {
+async function validateEvent(event: PDU, _serverName: string): Promise<{ valid: boolean; error?: string }> {
   // Verify content hash if present
   if (event.hashes?.sha256) {
     const calculated = await sha256(JSON.stringify(event.content));
@@ -199,15 +193,9 @@ async function validateEvent(event: PDU, serverName: string): Promise<{ valid: b
     }
   }
 
-  // Verify signature if present
+  // Verify signature if present (signature verification would be done during auth)
   if (event.signatures) {
-    for (const [entity, sigs] of Object.entries(event.signatures)) {
-      for (const [keyId, signature] of Object.entries(sigs)) {
-        // We would need the server's key to verify, but that's done later in event auth.
-        // For now, assume signature is present and will be checked during auth.
-        // Optionally, we could fetch the key now.
-      }
-    }
+    // Signatures present - will be verified during event auth
   }
 
   return { valid: true };
