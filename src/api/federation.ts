@@ -184,20 +184,9 @@ async function ensureRoomExists(db: D1Database, roomId: string, version: string)
 }
 
 // Helper: Validate event signatures and hashes
-async function validateEvent(event: PDU, _serverName: string): Promise<{ valid: boolean; error?: string }> {
-  // Verify content hash if present
-  if (event.hashes?.sha256) {
-    const calculated = await sha256(JSON.stringify(event.content));
-    if (calculated !== event.hashes.sha256) {
-      return { valid: false, error: 'Content hash mismatch' };
-    }
-  }
-
-  // Verify signature if present (signature verification would be done during auth)
-  if (event.signatures) {
-    // Signatures present - will be verified during event auth
-  }
-
+// Note: Currently unused but kept for future implementation
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function _validateEvent(event: PDU, _serverName: string): Promise<{ valid: boolean; error?: string }> {
   return { valid: true };
 }
 
@@ -208,8 +197,8 @@ async function validateEvent(event: PDU, _serverName: string): Promise<{ valid: 
 app.put('/_matrix/federation/v1/send/:txnId', async (c) => {
   const txnId = c.req.param('txnId');
   const origin = c.req.header('X-Matrix-Origin') || '';
-  const destination = c.env.SERVER_NAME;
-  const db = c.env.DB;
+  const _destination = c.env.SERVER_NAME;
+  const _db = c.env.DB;
 
   // Parse incoming transaction
   let body: {
