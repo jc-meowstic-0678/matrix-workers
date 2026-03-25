@@ -859,8 +859,8 @@ export async function hasActiveWebSocket(
 
     if (!response.ok) return false;
     
-    const { hasWebSocket } = await response.json();
-    return hasWebSocket;
+    const data = await response.json() as { hasWebSocket?: boolean };
+    return data.hasWebSocket ?? false;
   } catch (error) {
     console.error(`[database] Failed to check WebSocket for ${userId}:`, error);
     return false;

@@ -119,8 +119,8 @@ export class CachedSlidingSyncHandler {
         }
       } catch (error) {
         console.error('Batch fetch failed:', error);
-        // Re-throw to let caller handle
-        throw new Error(`Failed to fetch room data: ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        throw new Error(`Failed to fetch room data: ${errorMessage}`);
       }
     }
 
@@ -201,7 +201,7 @@ export class CachedSlidingSyncHandler {
       const rooms = await stmt.bind(...params).all<RoomRow>();
 
       for (const room of rooms.results || []) {
-        const summary = this.formatRoomSummary(room);
+        const summary = await this.formatRoomSummary(room);
         results.set(room.room_id, summary);
       }
     }
@@ -286,21 +286,9 @@ export class CachedSlidingSyncHandler {
   }
 
   /**
-   * Get timestamp of last change in a room
-   */
-  private async getLastRoomChange(roomId: string): Promise<number | null> {
-  const result = await this.db.prepare(`
-    SELECT MAX(stream_ordering) as last_pos
-    FROM events
-    WHERE room_id = ?
-  `).bind(roomId).first<{ last_pos: number }>();
-  return result?.last_pos ?? null;
-  }
-
-  /**
    * Format raw database row into RoomSummary
    */
-  private async formatRoomSummary(room: RoomRow): RoomSummary {
+  private async formatRoomSummary(room: RoomRow): Promise<RoomSummary> {
     // Determine if this is a DM (room with 2 members and no name)
     const isDM = room.member_count === 2 && !room.name;
 
@@ -316,7 +304,7 @@ export class CachedSlidingSyncHandler {
       memberCount: room.member_count,
       lastEventId: room.last_event_id || undefined,
       lastEventTimestamp: room.last_timestamp || 0,
-      lastStreamPos: room.last_stream_pos,
+      lastStreamPos: room.lastStreamPos,
       membership: room.membership || undefined,
       heroes: heroes.slice(0, room.membership === 'join' ? 5 : 3),
       isDM

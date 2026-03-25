@@ -64,7 +64,7 @@ export class SlidingSyncMonitor {
   private db?: D1Database;
   private instanceId: string;
 
-  constructor(private env: Env) {
+  constructor(env: Env) {
     this.cache = env.CACHE;
     this.db = env.DB;
     this.instanceId = this.generateInstanceId();
@@ -286,7 +286,6 @@ export class SlidingSyncMonitor {
    * Generate comprehensive performance report
    */
   async generateReport(includeUserDetails: boolean = false): Promise<AggregatedMetrics> {
-    const allDurations: number[] = [];
     const userMetrics: Record<string, UserMetricData> = {};
     const listSizeMetrics: Map<number, { total: number; count: number }> = new Map();
     

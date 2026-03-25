@@ -520,25 +520,6 @@ constructor(env: Env, syncHandler?: OptimizedSlidingSyncHandler) {
       events: [] // Would be populated with presence events
     };
   }
-
-  /**
-   * Generate a next batch token
-   */
-  private generateNextBatch(_since: string | null): string {
-    // Simple implementation - increment a counter or use timestamp
-    // In production, this should be a database stream position
-    const base = since ? parseInt(since) || 0 : 0;
-    return (base + 1).toString();
-  }
-
-  /**
-   * Generate next batch token with database position
-   */
-  private async generateNextBatchWithPosition(_userId: string): Promise<string> {
-    // This would query the current stream position from the database
-    // For now, return timestamp-based token
-    return Date.now().toString();
-  }
 }
 
 // ============================================

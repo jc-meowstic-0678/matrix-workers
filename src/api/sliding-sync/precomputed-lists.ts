@@ -39,15 +39,6 @@ interface PrecomputedLists {
   version: number;
 }
 
-interface RoomRow {
-  room_id: string;
-  last_activity: number;
-  name: string | null;
-  type: string | null;
-  encrypted: number;
-  member_count: number;
-}
-
 // ============================================
 // Main Precomputed List Manager
 // ============================================
@@ -245,6 +236,28 @@ export class PrecomputedListManager {
   }
 
   /**
+   * Get DM rooms list (rooms with exactly 2 members)
+   */
+  private async getDMList(userId: string): Promise<string[]> {
+    const result = await this.db.prepare(`
+      SELECT rm.room_id
+      FROM room_memberships rm
+      JOIN rooms r ON rm.room_id = r.room_id
+      WHERE rm.user_id = ? 
+        AND rm.membership = 'join'
+        AND r.member_count = 2
+      ORDER BY (
+        SELECT MAX(origin_server_ts) 
+        FROM events 
+        WHERE room_id = rm.room_id
+      ) DESC
+      LIMIT ?
+    `).bind(userId, this.MAX_LIST_SIZE).all<{ room_id: string }>();
+
+    return result.results?.map(r => r.room_id) || [];
+  }
+
+  /**
    * Get filtered rooms with pagination for incremental sync
    */
   private async getFilteredRoomsPaginated(
@@ -266,7 +279,7 @@ export class PrecomputedListManager {
     
     // Apply filters if present
     if (filters) {
-      const filterClauses = this.buildFilterClauses(filters, params);
+      const filterClauses = this.buildFilterClauses(userId, filters, params);
       if (filterClauses) {
         query += ` AND ${filterClauses}`;
       }
@@ -299,7 +312,7 @@ export class PrecomputedListManager {
   /**
    * Build SQL filter clauses from filter object
    */
-  private buildFilterClauses(filters: RoomFilter, params: any[]): string | null {
+  private buildFilterClauses(userId: string, filters: RoomFilter, params: any[]): string | null {
     const clauses: string[] = [];
 
     if (filters.room_types && filters.room_types.length > 0) {

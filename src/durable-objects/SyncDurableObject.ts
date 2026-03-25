@@ -38,12 +38,6 @@ interface SlidingSyncConnectionState {
   roomSentAsRead?: Record<string, boolean>;
 }
 
-interface DeliveryAcknowledgement {
-  event_id: string;
-  device_id: string;
-  acknowledged_at: number;
-}
-
 export class SyncDurableObject extends DurableObject<Env> {
   private sessions: Map<WebSocket, SyncSession> = new Map();
   // FIXED: Use storage for persistent tracking, not in-memory array

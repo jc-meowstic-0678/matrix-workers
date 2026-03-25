@@ -183,13 +183,6 @@ async function ensureRoomExists(db: D1Database, roomId: string, version: string)
   }
 }
 
-// Helper: Validate event signatures and hashes
-// Note: Currently unused but kept for future implementation
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function _validateEvent(_event: PDU, _serverName: string): { valid: boolean; error?: string } {
-  return { valid: true };
-}
-
 // ============================================
 // /send Endpoint - Receive transactions
 // ============================================
@@ -197,7 +190,6 @@ function _validateEvent(_event: PDU, _serverName: string): { valid: boolean; err
 app.put('/_matrix/federation/v1/send/:txnId', async (c) => {
   const txnId = c.req.param('txnId');
   const origin = c.req.header('X-Matrix-Origin') || '';
-  const _destination = c.env.SERVER_NAME;
   const db = c.env.DB;
 
   // Parse incoming transaction
@@ -228,7 +220,6 @@ app.put('/_matrix/federation/v1/send/:txnId', async (c) => {
   }
 
   const pdus = body.pdus || [];
-  const _edus = body.edus || [];
 
   // Process PDUs
   const pduResults: Record<string, Record<string, any>> = {};
@@ -317,7 +308,7 @@ app.put('/_matrix/federation/v1/send/:txnId', async (c) => {
         };
       });
 
-      const authCheck = checkEventAuth(event as PDU, stateEvents, roomVersion);
+      const authCheck = checkEventAuth(event as PDU, stateEvents as PDU[], roomVersion);
       if (!authCheck.allowed) {
         pduResults[eventId] = { error: { errcode: 'M_FORBIDDEN', error: authCheck.error || 'Forbidden' } };
         continue;
@@ -465,8 +456,6 @@ app.get('/_matrix/federation/v1/backfill/:roomId', async (c) => {
     return Errors.missingParam('v (event_id)').toResponse();
   }
 
-  const db = c.env.DB;
-
   // Get the room's Durable Object to find prev_events chain
   const roomDO = getRoomDO(c.env, roomId);
 
@@ -489,7 +478,6 @@ app.get('/_matrix/federation/v1/backfill/:roomId', async (c) => {
 // POST /_matrix/federation/v1/get_missing_events/:roomId
 app.post('/_matrix/federation/v1/get_missing_events/:roomId', async (c) => {
   const roomId = c.req.param('roomId');
-  const db = c.env.DB;
 
   let body: {
     earliest_events: string[];
@@ -612,7 +600,6 @@ app.get('/_matrix/federation/v1/query/profile', async (c) => {
 // GET /_matrix/federation/v1/user/devices/:userId
 app.get('/_matrix/federation/v1/user/devices/:userId', async (c) => {
   const userId = c.req.param('userId');
-  const db = c.env.DB;
 
   // This should return device keys and cross-signing keys.
   // For simplicity, we return an empty response; implement using Durable Objects.

@@ -499,7 +499,7 @@ export class OptimizedSlidingSyncHandler {
   private async processRoomSubscriptions(
     userId: string,
     subscriptions: Record<string, RoomSubscription>,
-    since: string | null
+    _since: string | null
   ): Promise<Record<string, RoomResult>> {
     const results: Record<string, RoomResult> = {};
     
@@ -539,7 +539,7 @@ export class OptimizedSlidingSyncHandler {
   private async fetchRoomData(
     _userId: string,
     roomId: string,
-    config: RoomSubscription,
+    _config: RoomSubscription,
     timelineLimit: number
   ): Promise<RoomResult> {
     // Get room state
@@ -615,25 +615,25 @@ export class OptimizedSlidingSyncHandler {
     
     if (extensions.to_device?.enabled) {
       promises.push(
-        this.processToDevice(userId, deviceId, extensions.to_device).then(r => result.to_device = r)
+        this.processToDevice(userId, deviceId, extensions.to_device).then(r => { result.to_device = r; })
       );
     }
     
     if (extensions.e2ee?.enabled) {
       promises.push(
-        this.processE2EE(userId, since).then(r => result.e2ee = r)
+        this.processE2EE(userId, since).then(r => { result.e2ee = r; })
       );
     }
     
     if (extensions.typing?.enabled) {
       promises.push(
-        this.processTyping(userId, extensions.typing.rooms || []).then(r => result.typing = r)
+        this.processTyping(userId, extensions.typing.rooms || []).then(r => { result.typing = r; })
       );
     }
     
     if (extensions.receipts?.enabled) {
       promises.push(
-        this.processReceipts(userId, extensions.receipts.rooms || []).then(r => result.receipts = r)
+        this.processReceipts(userId, extensions.receipts.rooms || []).then(r => { result.receipts = r; })
       );
     }
     
@@ -679,7 +679,7 @@ private async processToDevice(
   // Get max stream position among returned messages for next_batch
   const nextPos = messages.length > 0
     ? Math.max(...messages.map(m => m.stream_position))
-    : await this.getCurrentToDeviceStreamPos(userId);
+    : 0;
   
   return {
     next_batch: `s${nextPos}`,

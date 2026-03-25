@@ -4,14 +4,6 @@
 import { DurableObject } from 'cloudflare:workers';
 import type { Env } from '../types';
 
-interface NotificationBatch {
-  roomId: string;
-  eventId: string;
-  eventType: string;
-  timestamp: number;
-  memberBatch: string[]; // Up to 50 members per batch
-}
-
 interface QueuedNotification {
   roomId: string;
   eventId: string;
@@ -25,7 +17,6 @@ interface QueuedNotification {
 }
 
 export class RoomNotificationQueue extends DurableObject<Env> {
-  private processingQueue: Map<string, QueuedNotification> = new Map();
   private readonly BATCH_SIZE = 50; // Cloudflare subrequest limit
   private readonly MAX_RETRIES = 3;
   private readonly RETRY_DELAY = 1000; // 1 second
