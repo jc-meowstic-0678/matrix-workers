@@ -1,6 +1,6 @@
 // src/api/sliding-sync/streaming-response.ts
 import { D1Database, KVNamespace } from '@cloudflare/workers-types';
-import { OptimizedSlidingSyncHandler } from './optimized-sync';
+import { OptimizedSlidingSyncHandler, ListConfigWithId } from './optimized-sync';
 import { SlidingSyncMonitor } from './performance-monitor';
 
 // ============================================
@@ -362,7 +362,8 @@ constructor(env: Env, syncHandler?: OptimizedSlidingSyncHandler) {
     
     try {
       // Use the optimized sync handler to process the list
-      const result = await this.syncHandler.processList(userId, config, since);
+      const configWithId = { ...config, id: listId } as ListConfigWithId;
+      const result = await this.syncHandler.processList(userId, configWithId, since);
       
       // Track performance
       const duration = Date.now() - startTime;
@@ -439,8 +440,8 @@ constructor(env: Env, syncHandler?: OptimizedSlidingSyncHandler) {
    * Process to-device messages extension
    */
   private async processToDeviceExtension(
-    userId: string,
-    config: { since?: string; limit?: number }
+    _userId: string,
+    _config: { since?: string; limit?: number }
   ): Promise<any> {
     // This would query the to_device_messages table
     return {
@@ -453,8 +454,8 @@ constructor(env: Env, syncHandler?: OptimizedSlidingSyncHandler) {
    * Process E2EE extension
    */
   private async processE2EEExtension(
-    userId: string,
-    since: string | null
+    _userId: string,
+    _since: string | null
   ): Promise<any> {
     // This would check for device list changes
     return {
@@ -469,7 +470,7 @@ constructor(env: Env, syncHandler?: OptimizedSlidingSyncHandler) {
    * Process typing notifications extension
    */
   private async processTypingExtension(
-    userId: string,
+    _userId: string,
     roomIds: string[]
   ): Promise<any> {
     if (roomIds.length === 0) return {};
@@ -484,7 +485,7 @@ constructor(env: Env, syncHandler?: OptimizedSlidingSyncHandler) {
    * Process receipts extension
    */
   private async processReceiptsExtension(
-    userId: string,
+    _userId: string,
     roomIds: string[]
   ): Promise<any> {
     if (roomIds.length === 0) return {};
@@ -499,8 +500,8 @@ constructor(env: Env, syncHandler?: OptimizedSlidingSyncHandler) {
    * Process account data extension
    */
   private async processAccountDataExtension(
-    userId: string,
-    roomIds: string[]
+    _userId: string,
+    _roomIds: string[]
   ): Promise<any> {
     // This would query account data changes
     return {
@@ -512,7 +513,7 @@ constructor(env: Env, syncHandler?: OptimizedSlidingSyncHandler) {
    * Process presence extension
    */
   private async processPresenceExtension(
-    userId: string
+    _userId: string
   ): Promise<any> {
     // This would query presence updates
     return {
@@ -523,7 +524,7 @@ constructor(env: Env, syncHandler?: OptimizedSlidingSyncHandler) {
   /**
    * Generate a next batch token
    */
-  private generateNextBatch(since: string | null): string {
+  private generateNextBatch(_since: string | null): string {
     // Simple implementation - increment a counter or use timestamp
     // In production, this should be a database stream position
     const base = since ? parseInt(since) || 0 : 0;
@@ -533,7 +534,7 @@ constructor(env: Env, syncHandler?: OptimizedSlidingSyncHandler) {
   /**
    * Generate next batch token with database position
    */
-  private async generateNextBatchWithPosition(userId: string): Promise<string> {
+  private async generateNextBatchWithPosition(_userId: string): Promise<string> {
     // This would query the current stream position from the database
     // For now, return timestamp-based token
     return Date.now().toString();
