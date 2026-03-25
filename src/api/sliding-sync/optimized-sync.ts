@@ -497,9 +497,9 @@ export class OptimizedSlidingSyncHandler {
    * Process room subscriptions - fetch full room data for specific rooms
    */
   private async processRoomSubscriptions(
-    userId: string,
+    _userId: string,
     subscriptions: Record<string, RoomSubscription>,
-    since: string | null
+    _since: string | null
   ): Promise<Record<string, RoomResult>> {
     const results: Record<string, RoomResult> = {};
     
@@ -537,9 +537,9 @@ export class OptimizedSlidingSyncHandler {
    * Fetch room data from database
    */
   private async fetchRoomData(
-    userId: string,
+    _userId: string,
     roomId: string,
-    config: RoomSubscription,
+    _config: RoomSubscription,
     timelineLimit: number
   ): Promise<RoomResult> {
     // Get room state
@@ -721,7 +721,7 @@ private async processE2EE(
    * Process typing notifications extension
    */
   private async processTyping(
-    userId: string,
+    _userId: string,
     roomIds: string[]
   ): Promise<{ rooms?: Record<string, { user_ids: string[] }> }> {
     if (roomIds.length === 0) return {};
@@ -753,8 +753,8 @@ private async processE2EE(
    * Process receipts extension
    */
   private async processReceipts(
-    userId: string,
-    roomIds: string[]
+    _userId: string,
+    _roomIds: string[]
   ): Promise<{ rooms?: Record<string, any> }> {
     // Implementation would fetch read receipts
     return {};
@@ -786,7 +786,7 @@ private async processE2EE(
   /**
    * Create error result for a list
    */
-  private createErrorResult(error: any): ListResult {
+  private createErrorResult(_error: any): ListResult {
     return {
       count: 0,
       ops: [{

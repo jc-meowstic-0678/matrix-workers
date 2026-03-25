@@ -182,72 +182,6 @@ interface ConnectionState {
 // Helper Functions (optimized to use new components)
 // ============================================
 
-async function _getCurrentStreamPosition(db: D1Database): Promise<number> {
-  const result = await db.prepare(
-    `SELECT MAX(stream_ordering) as max_pos FROM events`
-  ).first<{ max_pos: number | null }>();
-  return result?.max_pos ?? 0;
-}
-
-async function _getConnectionState(
-  syncDO: DurableObjectNamespace,
-  userId: string,
-  connId: string
-): Promise<ConnectionState | null> {
-  const doId = syncDO.idFromName(userId);
-  const stub = syncDO.get(doId);
-
-  try {
-    const response = await stub.fetch(
-      new URL(`http://internal/sliding-sync/state?conn_id=${encodeURIComponent(connId)}`),
-      { method: 'GET' }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => 'unknown error');
-      throw new Error(`DO fetch failed: ${response.status} - ${errorText}`);
-    }
-
-    const data = await response.json();
-    return data as ConnectionState | null;
-  } catch (error) {
-    console.error('[sliding-sync] Failed to get connection state from DO:', error);
-    throw error;
-  }
-}
-
-async function saveConnectionState(
-  syncDO: DurableObjectNamespace,
-  userId: string,
-  connId: string,
-  state: ConnectionState
-): Promise<void> {
-  const doId = syncDO.idFromName(userId);
-  const stub = syncDO.get(doId);
-
-  try {
-    const response = await stub.fetch(
-      new URL(`http://internal/sliding-sync/state?conn_id=${encodeURIComponent(connId)}`),
-      {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(state),
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`DO save failed: ${response.status} - ${errorText}`);
-    }
-  } catch (error) {
-    console.error('[sliding-sync] Failed to save connection state to DO:', error);
-  }
-}
-
-// ============================================
-// Main Route Handlers
-// ============================================
-
 /**
  * POST /_matrix/client/v1/sync
  * Sliding Sync endpoint with performance optimizations
@@ -464,7 +398,7 @@ app.get('/v3/sync', requireAuth(), async (c: Context) => {
       rooms: {
         join: Object.fromEntries(
           Object.entries(data.lists.rooms?.rooms || {})
-            .map(([id, room]) => [id, { timeline: { events: [] } }])
+            .map(([id, _room]) => [id, { timeline: { events: [] } }])
         )
       }
     });
