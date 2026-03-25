@@ -6,7 +6,7 @@ import { Hono } from 'hono';
 import type { DurableObjectStub } from '@cloudflare/workers-types';
 import type { AppEnv, PDU } from '../types';
 import { Errors } from '../utils/errors';
-import { signJson, sha256 } from '../utils/crypto';
+import { signJson } from '../utils/crypto';
 import { requireFederationAuth } from '../middleware/federation-auth';
 import {
   verifyRemoteSignature,
@@ -197,8 +197,8 @@ async function _validateEvent(event: PDU, _serverName: string): Promise<{ valid:
 app.put('/_matrix/federation/v1/send/:txnId', async (c) => {
   const txnId = c.req.param('txnId');
   const origin = c.req.header('X-Matrix-Origin') || '';
-  const _destination = c.env.SERVER_NAME;
-  const _db = c.env.DB;
+  const destination = c.env.SERVER_NAME;
+  const db = c.env.DB;
 
   // Parse incoming transaction
   let body: {
