@@ -278,7 +278,8 @@ app.post('/v1/sync', requireAuth(), async (c: Context) => {
     return response;
   } catch (error) {
     console.error('Sliding sync error:', error);
-    return c.json(Errors.internal(error.message), 500);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return c.json(Errors.internal(message), 500);
   }
 });
 
@@ -316,7 +317,8 @@ app.get('/v1/sync', requireAuth(), async (c: Context) => {
     return await optimizedHandler.handleSlidingSync(request, userId, deviceId);
   } catch (error) {
     console.error('Sliding sync GET error:', error);
-    return c.json(Errors.internal(error.message), 500);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return c.json(Errors.internal(message), 500);
   }
 });
 
@@ -333,7 +335,8 @@ app.post('/v1/sync/stream', requireAuth(), async (c: Context) => {
     return await streamingHandler.handleSlidingSyncStreaming(c.req.raw, userId, deviceId);
   } catch (error) {
     console.error('Streaming sync error:', error);
-    return c.json(Errors.internal(error.message), 500);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return c.json(Errors.internal(message), 500);
   }
 });
 
