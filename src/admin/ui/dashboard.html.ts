@@ -41,6 +41,9 @@ import {
   securityFunctions 
 } from './views/security';
 import { 
+  ssoView 
+} from './views/sso';
+import { 
   settingsView,
   settingsStyles,
   settingsFunctions 
@@ -746,6 +749,7 @@ export const adminDashboardHtml = (serverName: string, isAuthenticated: boolean 
       ${mediaView()}
       ${reportsView()}
       ${securityView()}
+      ${ssoView(serverName)}
       ${settingsView()}
     </div>
   </div>

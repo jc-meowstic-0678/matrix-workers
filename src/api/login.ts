@@ -50,6 +50,9 @@ async function isRegistrationEnabled(env: AppEnv['Bindings']): Promise<boolean> 
 
 // GET /_matrix/client/v3/login - Get supported login flows
 app.get('/_matrix/client/v3/login', (c) => {
+  const serverName = c.env.SERVER_NAME;
+  const baseUrl = `https://${serverName}`;
+
   return c.json({
     flows: [
       {
@@ -60,6 +63,31 @@ app.get('/_matrix/client/v3/login', (c) => {
       },
       {
         type: 'm.login.dummy',
+      },
+      {
+        type: 'm.login.sso',
+        identity_providers: [
+          {
+            id: 'oidc',
+            name: 'SSO',
+            icon: 'mxc://localhost/matrix-logo',
+            brand_name: 'Single Sign-On',
+          },
+        ],
+      },
+      {
+        type: 'm.login.oauth2',
+        steps: [
+          {
+            type: 'm.login.identity_provider',
+            idp: {
+              id: 'oidc',
+              name: 'SSO',
+              icon: 'mxc://localhost/matrix-logo',
+              brand_name: 'Single Sign-On',
+            },
+          },
+        ],
       },
     ],
   });
@@ -382,9 +410,7 @@ app.post('/_matrix/client/v3/register', async (c) => {
       return Errors.invalidUsername('Username contains invalid characters').toResponse();
     }
 
-    if (!password) {
-      return Errors.missingParam('password').toResponse();
-    }
+    // Password is optional - allow passwordless registration
   }
 
   // Generate localpart for guests
@@ -500,6 +526,57 @@ app.get('/_matrix/client/v3/account/whoami', requireAuth(), async (c) => {
     device_id: deviceId,
     is_guest: user.is_guest,
   });
+});
+
+// ============================================
+// SSO Login Redirect
+// ============================================
+// GET /_matrix/client/v3/login/sso/redirect
+// Redirects to the OIDC authorization endpoint for SSO login
+app.get('/_matrix/client/v3/login/sso/redirect', async (c) => {
+  const serverName = c.env.SERVER_NAME;
+  const baseUrl = `https://${serverName}`;
+
+  // Get enabled IdP providers
+  const providers = await c.env.DB.prepare(
+    `SELECT id FROM idp_providers WHERE enabled = 1 ORDER BY display_order LIMIT 1`
+  ).first<{ id: string }>();
+
+  if (!providers) {
+    return c.json({
+      errcode: 'M_FORBIDDEN',
+      error: 'No SSO providers are configured'
+    }, 403);
+  }
+
+  const providerId = providers.id;
+
+  // Generate state for CSRF protection
+  const stateBytes = crypto.getRandomValues(new Uint8Array(16));
+  const state = btoa(String.fromCharCode(...stateBytes))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
+
+  // Store state in KV temporarily (5 min TTL)
+  const authState = {
+    state,
+    redirectUri: `${baseUrl}/auth/oidc/${providerId}/callback`,
+    createdAt: Date.now(),
+  };
+
+  await c.env.SESSIONS.put(
+    `sso_state:${state}`,
+    JSON.stringify(authState),
+    { expirationTtl: 300 }
+  );
+
+  // Redirect to OIDC authorization endpoint
+  const authUrl = new URL(`${baseUrl}/auth/oidc/${providerId}/login`);
+  authUrl.searchParams.set('state', state);
+  authUrl.searchParams.set('redirect_uri', authState.redirectUri);
+
+  return c.redirect(authUrl.toString(), 302);
 });
 
 export default app;
