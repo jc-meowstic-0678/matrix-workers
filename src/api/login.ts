@@ -50,9 +50,6 @@ async function isRegistrationEnabled(env: AppEnv['Bindings']): Promise<boolean> 
 
 // GET /_matrix/client/v3/login - Get supported login flows
 app.get('/_matrix/client/v3/login', (c) => {
-  const serverName = c.env.SERVER_NAME;
-  const baseUrl = `https://${serverName}`;
-
   return c.json({
     flows: [
       {

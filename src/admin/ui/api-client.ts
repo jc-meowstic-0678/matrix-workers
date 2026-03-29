@@ -445,18 +445,18 @@ export const mediaFunctions = (): string => `
       
       currentIdps.forEach(idp => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${idp.name}</td>
-          <td>${idp.issuer_url}</td>
-          <td>${idp.enabled ? '<span class="badge badge-success">Enabled</span>' : '<span class="badge badge-secondary">Disabled</span>'}</td>
-          <td>${idp.auto_create_users ? '<span class="badge badge-success">Yes</span>' : '<span class="badge badge-warning">No</span>'}</td>
-          <td>${idp.user_count || 0}</td>
+        tr.innerHTML = \`
+          <td>\${idp.name}</td>
+          <td>\${idp.issuer_url}</td>
+          <td>\${idp.enabled ? '<span class="badge badge-success">Enabled</span>' : '<span class="badge badge-secondary">Disabled</span>'}</td>
+          <td>\${idp.auto_create_users ? '<span class="badge badge-success">Yes</span>' : '<span class="badge badge-warning">No</span>'}</td>
+          <td>\${idp.user_count || 0}</td>
           <td>
-            <button class="btn btn-sm btn-primary" onclick="editIdp('${idp.id}')">Edit</button>
-            <button class="btn btn-sm btn-info" onclick="testIdp('${idp.id}')">Test</button>
-            <button class="btn btn-sm btn-danger" onclick="deleteIdp('${idp.id}')">Delete</button>
+            <button class="btn btn-sm btn-primary" onclick="editIdp('\${idp.id}')">Edit</button>
+            <button class="btn btn-sm btn-info" onclick="testIdp('\${idp.id}')">Test</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteIdp('\${idp.id}')">Delete</button>
           </td>
-        `;
+        \`;
         tbody.appendChild(tr);
       });
 
