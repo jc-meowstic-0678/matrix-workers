@@ -41,6 +41,41 @@ app.get('/.well-known/matrix/server', (c) => {
   });
 });
 
+// GET /.well-known/element/element.json
+// Element X uses this to discover homeserver capabilities
+app.get('/.well-known/element/element.json', (c) => {
+  const serverName = c.env.SERVER_NAME;
+  const baseUrl = `https://${serverName}`;
+
+  return c.json({
+    'org.matrix.msc3886': {
+      unstable: {
+        _secret: false,
+      },
+    },
+    'org.matrix.msc3887': {
+      unstable: {
+        _secret: false,
+      },
+    },
+    'io.element.e2ee': {
+      default: {
+        algorithm: 'm.megolm.v1.aes-sha2',
+      },
+    },
+    'io.element.voice': {
+      default: {},
+    },
+    'm.homeserver': {
+      base_url: baseUrl,
+    },
+    'm.identity_server': {
+      accepted_url: `${baseUrl}`,
+      url: `${baseUrl}`,
+    },
+  });
+});
+
 // GET /.well-known/openid-configuration - OIDC Discovery endpoint
 // This is required for Element Web OIDC-native authentication
 // See: https://spec.matrix.org/v1.17/client-server-api/#oauth-20-api
