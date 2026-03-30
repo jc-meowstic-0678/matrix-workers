@@ -439,12 +439,19 @@ app.get('/_matrix/client/v1/sync/metrics', requireAuth(), async (c: Context) => 
   }
 });
 
+// Debug endpoint - remove after testing
+app.get('/_matrix/client/unstable/org.matrix.simplified_msc3575/sync', (c) => {
+  console.log('[DEBUG] simplified_msc3575/sync endpoint reached via GET');
+  return c.json({ status: 'ok', endpoint: 'simplified_msc3575/sync', method: 'GET' });
+});
+
 /**
  * POST /_matrix/client/unstable/org.matrix.simplified_msc3575/sync
  * Simplified Sliding Sync (MSC4186) - same as v1/sync but at unstable path
  * Element X uses this endpoint
  */
 app.post('/_matrix/client/unstable/org.matrix.simplified_msc3575/sync', requireAuth(), async (c: Context) => {
+  console.log('[DEBUG] simplified_msc3575/sync endpoint reached via POST');
   const { optimizedHandler, monitor, streamingHandler } = getHandlers(c);
   const userId = c.get('userId');
   const deviceId = c.get('deviceId') || '';
