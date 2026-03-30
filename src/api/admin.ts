@@ -213,7 +213,7 @@ app.get('/admin/api/users', requireAdminAuth, async (c) => {
 
 // GET /admin/api/users/:userId - Get user details
 app.get('/admin/api/users/:userId', requireAdminAuth, async (c) => {
-  const userId = decodeURIComponent(c.req.param('userId'));
+  const userId = decodeURIComponent(c.req.param('userId')!);
   const db = c.env.DB;
 
   const user = await db.prepare(`
@@ -247,7 +247,7 @@ app.get('/admin/api/users/:userId', requireAdminAuth, async (c) => {
 
 // PUT /admin/api/users/:userId - Update user
 app.put('/admin/api/users/:userId', requireAdminAuth, async (c) => {
-  const userId = decodeURIComponent(c.req.param('userId'));
+  const userId = decodeURIComponent(c.req.param('userId')!);
   const db = c.env.DB;
 
   let body: any;
@@ -291,7 +291,7 @@ app.put('/admin/api/users/:userId', requireAdminAuth, async (c) => {
 
 // DELETE /admin/api/users/:userId - Deactivate user
 app.delete('/admin/api/users/:userId', requireAdminAuth, async (c) => {
-  const userId = decodeURIComponent(c.req.param('userId'));
+  const userId = decodeURIComponent(c.req.param('userId')!);
   const db = c.env.DB;
 
   // Deactivate instead of delete (preserve history)
@@ -310,7 +310,7 @@ app.delete('/admin/api/users/:userId', requireAdminAuth, async (c) => {
 
 // POST /admin/api/users/:userId/reset-password - Reset user password
 app.post('/admin/api/users/:userId/reset-password', requireAdminAuth, async (c) => {
-  const userId = decodeURIComponent(c.req.param('userId'));
+  const userId = decodeURIComponent(c.req.param('userId')!);
   const db = c.env.DB;
 
   let body: any;
@@ -380,7 +380,7 @@ app.get('/admin/api/rooms', requireAdminAuth, async (c) => {
 
 // GET /admin/api/rooms/:roomId - Get room details
 app.get('/admin/api/rooms/:roomId', requireAdminAuth, async (c) => {
-  const roomId = decodeURIComponent(c.req.param('roomId'));
+  const roomId = decodeURIComponent(c.req.param('roomId')!);
   const db = c.env.DB;
 
   const room = await db.prepare(`
@@ -440,7 +440,7 @@ app.get('/admin/api/rooms/:roomId', requireAdminAuth, async (c) => {
 
 // DELETE /admin/api/rooms/:roomId - Delete room
 app.delete('/admin/api/rooms/:roomId', requireAdminAuth, async (c) => {
-  const roomId = decodeURIComponent(c.req.param('roomId'));
+  const roomId = decodeURIComponent(c.req.param('roomId')!);
   const db = c.env.DB;
 
   // Delete in order (foreign key constraints)
@@ -641,7 +641,7 @@ app.get('/admin/api/media', requireAdminAuth, async (c) => {
 
 // DELETE /admin/api/media/:mediaId - Delete media
 app.delete('/admin/api/media/:mediaId', requireAdminAuth, async (c) => {
-  const mediaId = c.req.param('mediaId');
+  const mediaId = c.req.param('mediaId')!;
   const db = c.env.DB;
 
   // Delete from R2
@@ -668,7 +668,7 @@ app.delete('/admin/api/media/:mediaId', requireAdminAuth, async (c) => {
 
 // POST /admin/api/media/:mediaId/quarantine - Quarantine media
 app.post('/admin/api/media/:mediaId/quarantine', requireAdminAuth, async (c) => {
-  const mediaId = c.req.param('mediaId');
+  const mediaId = c.req.param('mediaId')!;
   const db = c.env.DB;
 
   await db.prepare(
@@ -745,7 +745,7 @@ app.post('/admin/api/remove-admin', requireAdminAuth, async (c) => {
 
 // DELETE /admin/api/users/:userId/purge - Completely delete user and all data
 app.delete('/admin/api/users/:userId/purge', requireAdminAuth, async (c) => {
-  const userId = decodeURIComponent(c.req.param('userId'));
+  const userId = decodeURIComponent(c.req.param('userId')!);
   const db = c.env.DB;
   const currentUserId = c.get('userId');
 
@@ -1017,7 +1017,7 @@ app.post('/admin/api/cleanup', requireAdminAuth, async (c) => {
 
 // POST /admin/api/users/:userId/reactivate - Reactivate a deactivated user
 app.post('/admin/api/users/:userId/reactivate', requireAdminAuth, async (c) => {
-  const userId = decodeURIComponent(c.req.param('userId'));
+  const userId = decodeURIComponent(c.req.param('userId')!);
   const db = c.env.DB;
 
   await db.prepare(
@@ -1081,7 +1081,7 @@ app.post('/admin/api/users/create', requireAdminAuth, async (c) => {
 
 // GET /admin/api/users/:userId/sessions - Get user sessions/tokens
 app.get('/admin/api/users/:userId/sessions', requireAdminAuth, async (c) => {
-  const userId = decodeURIComponent(c.req.param('userId'));
+  const userId = decodeURIComponent(c.req.param('userId')!);
   const db = c.env.DB;
 
   const sessions = await db.prepare(`
@@ -1096,7 +1096,7 @@ app.get('/admin/api/users/:userId/sessions', requireAdminAuth, async (c) => {
 
 // DELETE /admin/api/users/:userId/sessions - Revoke all user sessions
 app.delete('/admin/api/users/:userId/sessions', requireAdminAuth, async (c) => {
-  const userId = decodeURIComponent(c.req.param('userId'));
+  const userId = decodeURIComponent(c.req.param('userId')!);
   const db = c.env.DB;
 
   const result = await db.prepare(
@@ -1108,7 +1108,7 @@ app.delete('/admin/api/users/:userId/sessions', requireAdminAuth, async (c) => {
 
 // DELETE /admin/api/sessions/:sessionId - Revoke specific session
 app.delete('/admin/api/sessions/:sessionId', requireAdminAuth, async (c) => {
-  const sessionId = c.req.param('sessionId');
+  const sessionId = c.req.param('sessionId')!;
   const db = c.env.DB;
 
   await db.prepare(
@@ -1120,7 +1120,7 @@ app.delete('/admin/api/sessions/:sessionId', requireAdminAuth, async (c) => {
 
 // GET /admin/api/rooms/:roomId/events - Browse room events
 app.get('/admin/api/rooms/:roomId/events', requireAdminAuth, async (c) => {
-  const roomId = decodeURIComponent(c.req.param('roomId'));
+  const roomId = decodeURIComponent(c.req.param('roomId')!);
   const db = c.env.DB;
   const limit = Math.min(parseInt(c.req.query('limit') || '50'), 100);
   const before = c.req.query('before');
@@ -1211,7 +1211,7 @@ app.get('/admin/api/reports', requireAdminAuth, async (c) => {
 // POST /admin/api/reports/:reportId/resolve - Resolve a report
 app.post('/admin/api/reports/:reportId/resolve', requireAdminAuth, async (c) => {
   const userId = c.get('userId');
-  const reportId = c.req.param('reportId');
+  const reportId = c.req.param('reportId')!;
   const db = c.env.DB;
 
   let body: { note?: string };
@@ -1239,7 +1239,7 @@ app.post('/admin/api/reports/:reportId/resolve', requireAdminAuth, async (c) => 
 
 // POST /admin/api/reports/:reportId/unresolve - Unresolve a report
 app.post('/admin/api/reports/:reportId/unresolve', requireAdminAuth, async (c) => {
-  const reportId = c.req.param('reportId');
+  const reportId = c.req.param('reportId')!;
   const db = c.env.DB;
 
   const result = await db.prepare(`
@@ -1364,7 +1364,7 @@ app.put('/admin/api/registration/do', requireAdminAuth, async (c) => {
 
 // POST /admin/api/users/:userId/login-token - Generate a one-time login token for QR code auth
 app.post('/admin/api/users/:userId/login-token', requireAdminAuth, async (c) => {
-  const userId = decodeURIComponent(c.req.param('userId'));
+  const userId = decodeURIComponent(c.req.param('userId')!);
   const db = c.env.DB;
 
   // Verify user exists and is not deactivated
@@ -1532,7 +1532,7 @@ app.post('/admin/api/idp/providers', requireAdminAuth, async (c) => {
 
 // GET /admin/api/idp/providers/:id - Get IdP provider details
 app.get('/admin/api/idp/providers/:id', requireAdminAuth, async (c) => {
-  const id = c.req.param('id');
+  const id = c.req.param('id')!;
   const db = c.env.DB;
 
   const provider = await db.prepare(`
@@ -1572,7 +1572,7 @@ app.get('/admin/api/idp/providers/:id', requireAdminAuth, async (c) => {
 
 // PUT /admin/api/idp/providers/:id - Update IdP provider
 app.put('/admin/api/idp/providers/:id', requireAdminAuth, async (c) => {
-  const id = c.req.param('id');
+  const id = c.req.param('id')!;
   const db = c.env.DB;
   let body: any;
 
@@ -1659,7 +1659,7 @@ app.put('/admin/api/idp/providers/:id', requireAdminAuth, async (c) => {
 
 // DELETE /admin/api/idp/providers/:id - Delete IdP provider
 app.delete('/admin/api/idp/providers/:id', requireAdminAuth, async (c) => {
-  const id = c.req.param('id');
+  const id = c.req.param('id')!;
   const db = c.env.DB;
 
   // Check provider exists
@@ -1676,8 +1676,8 @@ app.delete('/admin/api/idp/providers/:id', requireAdminAuth, async (c) => {
 
 // DELETE /admin/api/idp/providers/:id/links/:linkId - Remove a user link
 app.delete('/admin/api/idp/providers/:id/links/:linkId', requireAdminAuth, async (c) => {
-  const providerId = c.req.param('id');
-  const linkId = c.req.param('linkId');
+  const providerId = c.req.param('id')!;
+  const linkId = c.req.param('linkId')!;
   const db = c.env.DB;
 
   await db.prepare(`
@@ -1689,7 +1689,7 @@ app.delete('/admin/api/idp/providers/:id/links/:linkId', requireAdminAuth, async
 
 // POST /admin/api/idp/providers/:id/test - Test IdP connection
 app.post('/admin/api/idp/providers/:id/test', requireAdminAuth, async (c) => {
-  const id = c.req.param('id');
+  const id = c.req.param('id')!;
   const db = c.env.DB;
 
   const provider = await db.prepare(`
@@ -1727,7 +1727,7 @@ app.post('/admin/api/idp/providers/:id/test', requireAdminAuth, async (c) => {
 
 // GET /admin/api/users/:userId/keys - Debug E2EE key state for a user
 app.get('/admin/api/users/:userId/keys', requireAdminAuth, async (c) => {
-  const userId = decodeURIComponent(c.req.param('userId'));
+  const userId = decodeURIComponent(c.req.param('userId')!);
   const db = c.env.DB;
 
   // Get cross-signing keys from D1
@@ -1805,7 +1805,7 @@ app.get('/admin/api/users/:userId/keys', requireAdminAuth, async (c) => {
 // Per Matrix spec: admin users can query any user, non-admin users can only query themselves
 app.get('/_matrix/client/v3/admin/whois/:userId', requireAuth(), async (c) => {
   const requestingUserId = c.get('userId');
-  const targetUserId = decodeURIComponent(c.req.param('userId'));
+  const targetUserId = decodeURIComponent(c.req.param('userId')!);
   const db = c.env.DB;
 
   // Check if requesting user is admin
@@ -1921,7 +1921,7 @@ app.get('/_synapse/admin/v2/users', requireAdminAuth, async (c) => {
 
 // GET /_synapse/admin/v2/users/:userId - User details (Synapse format)
 app.get('/_synapse/admin/v2/users/:userId', requireAdminAuth, async (c) => {
-  const userId = decodeURIComponent(c.req.param('userId'));
+  const userId = decodeURIComponent(c.req.param('userId')!);
   const db = c.env.DB;
 
   const user = await db.prepare(`
@@ -1952,7 +1952,7 @@ app.get('/_synapse/admin/v2/users/:userId', requireAdminAuth, async (c) => {
 
 // POST /_synapse/admin/v1/deactivate/:userId - Deactivate user (Synapse format)
 app.post('/_synapse/admin/v1/deactivate/:userId', requireAdminAuth, async (c) => {
-  const userId = decodeURIComponent(c.req.param('userId'));
+  const userId = decodeURIComponent(c.req.param('userId')!);
   const db = c.env.DB;
 
   // Check user exists
@@ -1976,7 +1976,7 @@ app.post('/_synapse/admin/v1/deactivate/:userId', requireAdminAuth, async (c) =>
 
 // POST /_synapse/admin/v1/reset_password/:userId - Reset password (Synapse format)
 app.post('/_synapse/admin/v1/reset_password/:userId', requireAdminAuth, async (c) => {
-  const userId = decodeURIComponent(c.req.param('userId'));
+  const userId = decodeURIComponent(c.req.param('userId')!);
   const db = c.env.DB;
 
   let body: any;
@@ -2103,7 +2103,7 @@ app.get('/_synapse/admin/v1/rooms', requireAdminAuth, async (c) => {
 
 // GET /_synapse/admin/v1/rooms/:roomId - Room details (Synapse format)
 app.get('/_synapse/admin/v1/rooms/:roomId', requireAdminAuth, async (c) => {
-  const roomId = decodeURIComponent(c.req.param('roomId'));
+  const roomId = decodeURIComponent(c.req.param('roomId')!);
   const db = c.env.DB;
 
   const room = await db.prepare(`
@@ -2256,7 +2256,7 @@ app.get('/_synapse/admin/v1/event_reports', requireAdminAuth, async (c) => {
 
 // DELETE /_synapse/admin/v1/rooms/:roomId - Delete room (Synapse format)
 app.delete('/_synapse/admin/v1/rooms/:roomId', requireAdminAuth, async (c) => {
-  const roomId = decodeURIComponent(c.req.param('roomId'));
+  const roomId = decodeURIComponent(c.req.param('roomId')!);
   const db = c.env.DB;
 
   // Check room exists
@@ -2285,7 +2285,7 @@ app.delete('/_synapse/admin/v1/rooms/:roomId', requireAdminAuth, async (c) => {
 
 // PUT /_synapse/admin/v2/users/:userId - Create or modify user (Synapse format)
 app.put('/_synapse/admin/v2/users/:userId', requireAdminAuth, async (c) => {
-  const userId = decodeURIComponent(c.req.param('userId'));
+  const userId = decodeURIComponent(c.req.param('userId')!);
   const db = c.env.DB;
 
   let body: any;
