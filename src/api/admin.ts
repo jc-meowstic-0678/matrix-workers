@@ -4,7 +4,6 @@ import { Hono } from 'hono';
 import { createMiddleware } from 'hono/factory';
 import type { AppEnv } from '../types';
 import { Errors } from '../utils/errors';
-import { requireAuth } from '../middleware/auth';
 import { requireAdminAuth } from '../admin/auth';
 import { getUserById } from '../services/database';
 import { generateLoginToken, generateOpaqueId } from '../utils/ids';
@@ -13,21 +12,6 @@ import { encryptSecret } from './oidc-auth';
 import { fetchOIDCDiscovery } from '../services/oidc';
 
 const app = new Hono<AppEnv>();
-
-// Admin authentication middleware
-const requireAdmin = createMiddleware<AppEnv>(async (c, next) => {
-  const userId = c.get('userId');
-  if (!userId) {
-    return Errors.unauthorized('Admin access required').toResponse();
-  }
-
-  const user = await getUserById(c.env.DB, userId);
-  if (!user || !user.admin) {
-    return Errors.forbidden('Admin privileges required').toResponse();
-  }
-
-  return next();
-});
 
 // Helper to get AdminDurableObject instance
 function getAdminDO(env: import('../types').Env) {

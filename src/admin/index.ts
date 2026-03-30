@@ -12,7 +12,6 @@ import { reportsApi } from './api/reports';
 import { securityApi } from './api/security';
 import { settingsApi } from './api/settings';
 import { adminDashboardHtml } from './ui/dashboard.html.js';
-import { getUserById } from '../services/database';
 import { Errors } from '../utils/errors';
 import { generateOpaqueId } from '../utils/ids';
 import { encryptSecret } from '../api/oidc-auth';
