@@ -1,7 +1,6 @@
 // Admin API endpoints
 
 import { Hono } from 'hono';
-import { createMiddleware } from 'hono/factory';
 import type { AppEnv } from '../types';
 import { Errors } from '../utils/errors';
 import { requireAdminAuth } from '../admin/auth';
@@ -1803,7 +1802,7 @@ app.get('/admin/api/users/:userId/keys', requireAdminAuth, async (c) => {
 
 // GET /_matrix/client/v3/admin/whois/:userId - Get information about a user's sessions
 // Per Matrix spec: admin users can query any user, non-admin users can only query themselves
-app.get('/_matrix/client/v3/admin/whois/:userId', requireAuth(), async (c) => {
+app.get('/_matrix/client/v3/admin/whois/:userId', requireAdminAuth, async (c) => {
   const requestingUserId = c.get('userId');
   const targetUserId = decodeURIComponent(c.req.param('userId')!);
   const db = c.env.DB;
