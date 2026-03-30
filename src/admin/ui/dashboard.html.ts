@@ -43,6 +43,7 @@ import {
 import { 
   ssoView 
 } from './views/sso';
+import { ssoFunctions } from './api-client';
 import { 
   settingsView,
   settingsStyles,
@@ -784,6 +785,7 @@ export const adminDashboardHtml = (serverName: string, isAuthenticated: boolean 
     ${getSecurityFunctions()}
     ${getSettingsFunctions()}
     ${getDashboardFunctions()}
+    ${getSsoFunctions()}
 
     // ============================================
     // Notification Helper
@@ -828,6 +830,7 @@ function getFederationFunctions() { return federationFunctions(); }
 function getSecurityFunctions() { return securityFunctions(); }
 function getSettingsFunctions() { return settingsFunctions(); }
 function getDashboardFunctions() { return dashboardFunctions(); }
+function getSsoFunctions() { return ssoFunctions(); }
 function getNotificationHelper() { return notificationHelper; }
 function getInitialization() { return initialization; }
 

@@ -1,5 +1,142 @@
 // API client for frontend
 
+export const ssoFunctions = (): string => `
+  let currentIdps = [];
+
+  async function loadSso() {
+    document.getElementById('ssoLoading').style.display = 'block';
+    document.getElementById('ssoTable').style.display = 'none';
+    document.getElementById('noSso').style.display = 'none';
+
+    try {
+      const data = await api.get('/idp/providers');
+      currentIdps = data.providers || [];
+      
+      if (currentIdps.length === 0) {
+        document.getElementById('ssoLoading').style.display = 'none';
+        document.getElementById('noSso').style.display = 'block';
+        return;
+      }
+
+      const tbody = document.getElementById('ssoTableBody');
+      tbody.innerHTML = '';
+      
+      currentIdps.forEach(idp => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = \`
+          <td>\${idp.name}</td>
+          <td>\${idp.issuer_url}</td>
+          <td>\${idp.enabled ? '<span class="badge badge-success">Enabled</span>' : '<span class="badge badge-secondary">Disabled</span>'}</td>
+          <td>\${idp.auto_create_users ? '<span class="badge badge-success">Yes</span>' : '<span class="badge badge-warning">No</span>'}</td>
+          <td>\${idp.linked_users || 0}</td>
+          <td>
+            <button class="btn btn-sm btn-primary" onclick="editIdp('\${idp.id}')">Edit</button>
+            <button class="btn btn-sm btn-info" onclick="testIdp('\${idp.id}')">Test</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteIdp('\${idp.id}')">Delete</button>
+          </td>
+        \`;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('ssoLoading').style.display = 'none';
+      document.getElementById('ssoTable').style.display = 'table';
+    } catch (err) {
+      console.error('Failed to load SSO providers:', err);
+      document.getElementById('ssoLoading').innerHTML = 'Failed to load SSO providers';
+    }
+  }
+
+  async function saveIdp(idpData, isNew) {
+    try {
+      if (isNew) {
+        await api.post('/idp/providers', idpData);
+      } else {
+        await api.put('/idp/providers/' + idpData.id, idpData);
+      }
+      hideModal('idpModal');
+      loadSso();
+    } catch (err) {
+      alert('Failed to save SSO provider: ' + (err.message || 'Unknown error'));
+    }
+  }
+
+  async function editIdp(id) {
+    const idp = currentIdps.find(i => i.id === id);
+    if (!idp) return;
+    
+    document.getElementById('idpModalTitle').textContent = 'Edit SSO Provider';
+    document.getElementById('idpId').value = idp.id;
+    document.getElementById('idpName').value = idp.name;
+    document.getElementById('idpIssuer').value = idp.issuer_url;
+    document.getElementById('idpClientId').value = idp.client_id;
+    document.getElementById('idpClientSecret').value = '';
+    document.getElementById('idpScopes').value = idp.scopes || 'openid profile email';
+    document.getElementById('idpUsernameClaim').value = idp.username_claim || 'email';
+    document.getElementById('idpAutoCreate').checked = idp.auto_create_users;
+    document.getElementById('idpEnabled').checked = idp.enabled;
+    document.getElementById('idpIconUrl').value = idp.icon_url || '';
+    showModal('idpModal');
+  }
+
+  async function deleteIdp(id) {
+    confirmAction('Delete SSO Provider', 'Are you sure you want to delete this SSO provider?', async () => {
+      try {
+        await api.delete('/idp/providers/' + id);
+        loadSso();
+      } catch (err) {
+        alert('Failed to delete SSO provider');
+      }
+    });
+  }
+
+  async function testIdp(id) {
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = 'Testing...';
+    
+    try {
+      const result = await api.post('/idp/providers/' + id + '/test', {});
+      alert('Connection successful! Provider is reachable.');
+    } catch (err) {
+      alert('Connection failed: ' + (err.message || 'Unknown error'));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Test';
+    }
+  }
+
+  function showAddIdpModal() {
+    document.getElementById('idpModalTitle').textContent = 'Add SSO Provider';
+    document.getElementById('idpForm').reset();
+    document.getElementById('idpId').value = '';
+    document.getElementById('idpAutoCreate').checked = true;
+    document.getElementById('idpEnabled').checked = true;
+    showModal('idpModal');
+  }
+
+  function submitIdpForm() {
+    const idpData = {
+      name: document.getElementById('idpName').value,
+      issuer_url: document.getElementById('idpIssuer').value,
+      client_id: document.getElementById('idpClientId').value,
+      client_secret: document.getElementById('idpClientSecret').value,
+      scopes: document.getElementById('idpScopes').value,
+      username_claim: document.getElementById('idpUsernameClaim').value,
+      auto_create_users: document.getElementById('idpAutoCreate').checked,
+      enabled: document.getElementById('idpEnabled').checked,
+      icon_url: document.getElementById('idpIconUrl').value || undefined
+    };
+
+    if (!idpData.name || !idpData.issuer_url || !idpData.client_id) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    const id = document.getElementById('idpId').value;
+    saveIdp(idpData, !id);
+  }
+`;
+
 export const createApiClient = (): string => `
   const api = {
     async login(password) {
