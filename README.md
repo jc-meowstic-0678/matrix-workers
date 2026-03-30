@@ -122,6 +122,7 @@ migrations/               # D1 schema files (001-013)
 - **Media** - Uploaded files management
 - **Reports** - Content reports
 - **Settings** - Server configuration
+- **SSO / Identity Providers** - Configure OIDC providers for SSO login (Google, Azure AD, Okta, etc.)
 
 ### Security
 - PBKDF2-SHA256 password hashing (100,000 iterations)
@@ -130,10 +131,17 @@ migrations/               # D1 schema files (001-013)
 
 ## Recent Updates
 
+### SSO / Identity Providers
+- Added OIDC-based SSO login support for Element X and other Matrix clients
+- Admin dashboard UI for managing identity providers (Google, Azure AD, Okta, Auth0, etc.)
+- Support for auto-creating users on first SSO login
+- Provider-specific redirect URIs: `https://your-server/auth/oidc/{provider_id}/callback`
+
 ### TypeScript Improvements
-- Fixed typing issues in admin API modules
+- Fixed all TypeScript errors in admin API modules
 - Added proper `Hono<AppEnv>()` type bindings
 - Fixed duplicate interface definitions
+- Added non-null assertions for route parameters
 
 ### Admin Dashboard
 - Added "Most Active Users" feature with real data from events table

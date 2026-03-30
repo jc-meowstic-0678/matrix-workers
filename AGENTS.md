@@ -22,14 +22,12 @@ This file provides guidance for AI agents working on this codebase. It documents
 - Sliding Sync (MSC3575)
 - End-to-End Encryption (E2EE via Megolm)
 - Federation (Server-Server API)
-- OIDC Authentication
+- OIDC Authentication (SSO via external IdPs)
 - Admin Dashboard (`/admin`)
 - Media Upload/Proxy
 - User Directory Search
 
 ### Known Issues
-- TypeScript has ~600+ errors (mostly in `src/api/*.ts`) - ongoing cleanup
-- Some API modules need proper `Hono<AppEnv>()` typing
 - E2EE key management is complex and spread across multiple files
 
 ---
@@ -101,7 +99,25 @@ The admin dashboard is at `/admin` with these views:
 - **Security** - Sessions, secrets status
 - **Media** - Uploaded files management
 - **Reports** - Content reports
+- **SSO** - Configure OIDC identity providers for SSO login
 - **Settings** - Server configuration
+
+### SSO / Identity Providers
+Identity providers allow users to login via external OIDC services (Google, Azure AD, Okta, Auth0, etc.).
+
+**Admin API Endpoints:**
+- `GET /admin/api/idp/providers` - List all IdP providers
+- `POST /admin/api/idp/providers` - Create new IdP provider
+- `PUT /admin/api/idp/providers/:id` - Update IdP provider
+- `DELETE /admin/api/idp/providers/:id` - Delete IdP provider
+- `POST /admin/api/idp/providers/:id/test` - Test IdP connection
+
+**Redirect URI Format:**
+```
+https://your-server/auth/oidc/{provider_id}/callback
+```
+
+Users must configure this redirect URI in their OAuth client (e.g., Google Cloud Console).
 
 ### Admin API Endpoints
 - `POST /admin/api/login` - Admin login
