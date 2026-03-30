@@ -194,8 +194,14 @@ export class OptimizedSlidingSyncHandler {
     
     if (contentType.includes('application/json')) {
       try {
-        return await request.json();
+        const text = await request.text();
+        // Handle empty body - this is valid for initial sync
+        if (!text || text.trim() === '') {
+          return {};
+        }
+        return JSON.parse(text);
       } catch (error) {
+        console.error('Failed to parse JSON body:', error);
         throw new Error('Invalid JSON in request body');
       }
     }
