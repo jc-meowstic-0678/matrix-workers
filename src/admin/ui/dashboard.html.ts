@@ -868,7 +868,10 @@ const createApiClient = `
       const response = await fetch('/admin/api' + endpoint, {
         headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
       });
-      if (!response.ok) throw new Error('API error: ' + response.status);
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error('API error: ' + response.status + ' - ' + (errData.error || errData.message || ''));
+      }
       return response.json();
     },
 
@@ -881,7 +884,10 @@ const createApiClient = `
         },
         body: JSON.stringify(data)
       });
-      if (!response.ok) throw new Error('API error: ' + response.status);
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error('API error: ' + response.status + ' - ' + (errData.error || errData.message || ''));
+      }
       return response.json();
     },
 
@@ -894,7 +900,10 @@ const createApiClient = `
         },
         body: JSON.stringify(data)
       });
-      if (!response.ok) throw new Error('API error: ' + response.status);
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error('API error: ' + response.status + ' - ' + (errData.error || errData.message || ''));
+      }
       return response.json();
     },
 
@@ -903,7 +912,10 @@ const createApiClient = `
         method: 'DELETE',
         headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
       });
-      if (!response.ok) throw new Error('API error: ' + response.status);
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error('API error: ' + response.status + ' - ' + (errData.error || errData.message || ''));
+      }
       return response.json();
     },
 
