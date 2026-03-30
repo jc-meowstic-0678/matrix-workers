@@ -538,9 +538,6 @@ app.post('/_matrix/client/unstable/org.matrix.msc3861/account/identity/reset', r
     // Delete cross-signing signatures
     await db.prepare('DELETE FROM cross_signing_signatures WHERE user_id = ? OR signer_user_id = ?').bind(userId, userId).run();
 
-    // Delete from KV (cache)
-    await c.env.CROSS_SIGNING_KEYS.delete(`user:${userId}`);
-
     // Record key change to trigger device list update for other users
     const streamPosition = await getNextStreamPosition(db, 'device_keys');
     await db.prepare(`

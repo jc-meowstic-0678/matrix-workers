@@ -163,15 +163,9 @@ app.post('/_matrix/client/v3/keys/upload', requireAuth(), async (c) => {
       }, 400);
     }
 
-    // Write to Durable Object first (primary - strongly consistent)
+    // Write to Durable Object (strongly consistent - primary storage)
     // This is critical for E2EE bootstrap where client uploads then immediately queries
     await putDeviceKeysToDO(c.env, userId, deviceId!, device_keys);
-
-    // Also write to KV as backup/cache
-    await c.env.DEVICE_KEYS.put(
-      `device:${userId}:${deviceId}`,
-      JSON.stringify(device_keys)
-    );
 
     // Record key change for /keys/changes
     await recordKeyChange(db, userId, deviceId, 'update');
@@ -207,32 +201,14 @@ app.post('/_matrix/client/v3/keys/upload', requireAuth(), async (c) => {
     }
   }
 
-  // Store one-time keys in KV for fast access
+  // Store one-time keys in D1 database
   const oneTimeKeyCounts: Record<string, number> = {};
 
   if (one_time_keys) {
-    // Get existing keys from KV
-    const existingKeys = await c.env.ONE_TIME_KEYS.get(
-      `otk:${userId}:${deviceId}`,
-      'json'
-    ) as Record<string, { keyId: string; keyData: any; claimed: boolean }[]> | null || {};
-
     for (const [keyId, keyData] of Object.entries(one_time_keys)) {
       const [algorithm] = keyId.split(':');
 
-      if (!existingKeys[algorithm]) {
-        existingKeys[algorithm] = [];
-      }
-
-      // Check if key already exists
-      const existingIndex = existingKeys[algorithm].findIndex(k => k.keyId === keyId);
-      if (existingIndex >= 0) {
-        existingKeys[algorithm][existingIndex] = { keyId, keyData, claimed: false };
-      } else {
-        existingKeys[algorithm].push({ keyId, keyData, claimed: false });
-      }
-
-      // Also write to D1 as backup
+      // Store in D1
       await db.prepare(`
         INSERT INTO one_time_keys (user_id, device_id, algorithm, key_id, key_data)
         VALUES (?, ?, ?, ?, ?)
@@ -246,29 +222,18 @@ app.post('/_matrix/client/v3/keys/upload', requireAuth(), async (c) => {
         JSON.stringify(keyData)
       ).run();
     }
+  }
 
-    // Save back to KV
-    await c.env.ONE_TIME_KEYS.put(
-      `otk:${userId}:${deviceId}`,
-      JSON.stringify(existingKeys)
-    );
+  // Get counts from D1
+  const countsResult = await db.prepare(`
+    SELECT algorithm, COUNT(*) as count
+    FROM one_time_keys
+    WHERE user_id = ? AND device_id = ? AND claimed = 0
+    GROUP BY algorithm
+  `).bind(userId, deviceId).all<{ algorithm: string; count: number }>();
 
-    // Count unclaimed keys
-    for (const [algorithm, keys] of Object.entries(existingKeys)) {
-      oneTimeKeyCounts[algorithm] = keys.filter(k => !k.claimed).length;
-    }
-  } else {
-    // Just get counts from KV
-    const existingKeys = await c.env.ONE_TIME_KEYS.get(
-      `otk:${userId}:${deviceId}`,
-      'json'
-    ) as Record<string, { keyId: string; keyData: any; claimed: boolean }[]> | null;
-
-    if (existingKeys) {
-      for (const [algorithm, keys] of Object.entries(existingKeys)) {
-        oneTimeKeyCounts[algorithm] = keys.filter(k => !k.claimed).length;
-      }
-    }
+  for (const row of countsResult.results) {
+    oneTimeKeyCounts[row.algorithm] = row.count;
   }
 
   // Store fallback keys
@@ -414,64 +379,29 @@ app.post('/_matrix/client/v3/keys/claim', requireAuth(), async (c) => {
       oneTimeKeys[userId] = {};
 
       for (const [deviceId, algorithm] of Object.entries(devices as Record<string, string>)) {
-        // Try to claim a one-time key from KV first
-        const existingKeys = await c.env.ONE_TIME_KEYS.get(
-          `otk:${userId}:${deviceId}`,
-          'json'
-        ) as Record<string, { keyId: string; keyData: any; claimed: boolean }[]> | null;
+        // Claim from D1 database
+        const otk = await db.prepare(`
+          SELECT id, key_id, key_data FROM one_time_keys
+          WHERE user_id = ? AND device_id = ? AND algorithm = ? AND claimed = 0
+          LIMIT 1
+        `).bind(userId, deviceId, algorithm).first<{
+          id: number;
+          key_id: string;
+          key_data: string;
+        }>();
 
         let foundKey = false;
 
-        if (existingKeys && existingKeys[algorithm]) {
-          // Find first unclaimed key
-          const keyIndex = existingKeys[algorithm].findIndex(k => !k.claimed);
-          if (keyIndex >= 0) {
-            const key = existingKeys[algorithm][keyIndex];
-            // Mark as claimed
-            existingKeys[algorithm][keyIndex].claimed = true;
+        if (otk) {
+          // Mark as claimed
+          await db.prepare(`
+            UPDATE one_time_keys SET claimed = 1, claimed_at = ? WHERE id = ?
+          `).bind(Date.now(), otk.id).run();
 
-            // Save back to KV
-            await c.env.ONE_TIME_KEYS.put(
-              `otk:${userId}:${deviceId}`,
-              JSON.stringify(existingKeys)
-            );
-
-            // Also mark in D1
-            await db.prepare(`
-              UPDATE one_time_keys SET claimed = 1, claimed_at = ?
-              WHERE user_id = ? AND device_id = ? AND key_id = ?
-            `).bind(Date.now(), userId, deviceId, key.keyId).run();
-
-            oneTimeKeys[userId][deviceId] = {
-              [key.keyId]: key.keyData,
-            };
-            foundKey = true;
-          }
-        }
-
-        if (!foundKey) {
-          // Fallback to D1 for legacy keys
-          const otk = await db.prepare(`
-            SELECT id, key_id, key_data FROM one_time_keys
-            WHERE user_id = ? AND device_id = ? AND algorithm = ? AND claimed = 0
-            LIMIT 1
-          `).bind(userId, deviceId, algorithm).first<{
-            id: number;
-            key_id: string;
-            key_data: string;
-          }>();
-
-          if (otk) {
-            // Mark as claimed
-            await db.prepare(`
-              UPDATE one_time_keys SET claimed = 1, claimed_at = ? WHERE id = ?
-            `).bind(Date.now(), otk.id).run();
-
-            oneTimeKeys[userId][deviceId] = {
-              [otk.key_id]: JSON.parse(otk.key_data),
-            };
-            foundKey = true;
-          }
+          oneTimeKeys[userId][deviceId] = {
+            [otk.key_id]: JSON.parse(otk.key_data),
+          };
+          foundKey = true;
         }
 
         if (!foundKey) {
@@ -862,9 +792,6 @@ app.post('/_matrix/client/v3/keys/device_signing/upload', requireAuth(), async (
     `).bind(userId, keyId, JSON.stringify(user_signing_key)).run();
   }
 
-  // Write to KV as cache (eventually consistent, for performance)
-  await c.env.CROSS_SIGNING_KEYS.put(`user:${userId}`, JSON.stringify(csKeys));
-
   return c.json({});
 });
 
@@ -940,12 +867,6 @@ app.post('/_matrix/client/v3/keys/signatures/upload', requireAuth(), async (c) =
 
             // Write to Durable Object (primary - strongly consistent)
             await putDeviceKeysToDO(c.env, userId, deviceId, existingKey);
-
-            // Also update KV as backup/cache
-            await c.env.DEVICE_KEYS.put(
-              `device:${userId}:${deviceId}`,
-              JSON.stringify(existingKey)
-            );
 
             console.log('[signatures/upload] Updated device key signatures:', {
               deviceId,

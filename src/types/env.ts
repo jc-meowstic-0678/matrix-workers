@@ -4,11 +4,10 @@ export interface Env {
   // D1 Database
   DB: D1Database;
 
-  // KV Namespaces - Only 3 remaining (E2EE keys moved to Durable Objects)
+  // KV Namespaces
   SESSIONS: KVNamespace;    // Session tokens
   CACHE: KVNamespace;       // Room summaries, precomputed lists
   ACCOUNT_DATA: KVNamespace; // User account data
-  ONE_TIME_KEYS: KVNamespace; // One-time keys for E2EE
 
   // R2 Bucket
   MEDIA: R2Bucket;
@@ -22,10 +21,6 @@ export interface Env {
   PUSH: DurableObjectNamespace;
   RATE_LIMIT: DurableObjectNamespace;
   ROOM_NOTIFICATION_QUEUE: DurableObjectNamespace;
-
-  // KV Namespaces for keys (legacy - should migrate to DO)
-  DEVICE_KEYS: KVNamespace;
-  CROSS_SIGNING_KEYS: KVNamespace;
 
   // Environment variables
   SERVER_NAME: string;

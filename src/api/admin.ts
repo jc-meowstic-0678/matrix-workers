@@ -807,14 +807,6 @@ app.delete('/admin/api/users/:userId/purge', requireAdminAuth, async (c) => {
   // Finally delete the user
   await db.prepare('DELETE FROM users WHERE user_id = ?').bind(userId).run();
 
-  // Delete device keys from KV
-  for (const device of devices.results) {
-    await c.env.DEVICE_KEYS.delete(`device:${userId}:${device.device_id}`);
-  }
-
-  // Clean up cross-signing keys from KV (stored as user:{userId} in keys.ts)
-  await c.env.CROSS_SIGNING_KEYS.delete(`user:${userId}`);
-
   // Invalidate stats cache
   await invalidateStatsCache(c.env);
 
@@ -907,13 +899,6 @@ app.post('/admin/api/users/bulk-delete', requireAdminAuth, async (c) => {
     
     // Finally delete the user
     await db.prepare('DELETE FROM users WHERE user_id = ?').bind(userId).run();
-
-    // Clean up KV data
-    for (const device of devices.results) {
-      await c.env.DEVICE_KEYS.delete(`device:${userId}:${device.device_id}`);
-    }
-    // Cross-signing keys stored as user:{userId} in keys.ts
-    await c.env.CROSS_SIGNING_KEYS.delete(`user:${userId}`);
     
     deleted++;
   }
@@ -976,14 +961,6 @@ app.post('/admin/api/cleanup', requireAdminAuth, async (c) => {
     
     // Finally delete the user
     await db.prepare('DELETE FROM users WHERE user_id = ?').bind(userId).run();
-
-    // Clean up KV cross-signing keys (stored as user:{userId} in keys.ts)
-    await c.env.CROSS_SIGNING_KEYS.delete(`user:${userId}`);
-  }
-
-  // Clean up device keys from KV
-  for (const device of allDevices.results) {
-    await c.env.DEVICE_KEYS.delete(`device:${device.user_id}:${device.device_id}`);
   }
 
   // Delete all rooms, events, and related data
@@ -1744,12 +1721,24 @@ app.get('/admin/api/users/:userId/keys', requireAdminAuth, async (c) => {
     SELECT device_id, display_name FROM devices WHERE user_id = ?
   `).bind(userId).all<{ device_id: string; display_name: string | null }>();
 
-  // Get device keys from KV
+  // Get device keys from Durable Object (strongly consistent)
   const deviceKeys: Record<string, any> = {};
+  const userKeysDO = c.env.USER_KEYS_DO.idFromName(userId);
+  const userKeysStub = c.env.USER_KEYS_DO.get(userKeysDO);
+  
   for (const device of devices.results) {
-    const keyData = await c.env.DEVICE_KEYS.get(`device:${userId}:${device.device_id}`);
-    if (keyData) {
-      deviceKeys[device.device_id] = JSON.parse(keyData);
+    try {
+      const response = await userKeysStub.fetch(
+        `http://internal/device-keys/get?device_id=${encodeURIComponent(device.device_id)}`
+      );
+      if (response.ok) {
+        const keys = await response.json();
+        if (keys) {
+          deviceKeys[device.device_id] = keys;
+        }
+      }
+    } catch (err) {
+      console.warn('[admin] Failed to get device keys from DO:', err);
     }
   }
 

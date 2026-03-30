@@ -439,4 +439,36 @@ app.get('/v1/sync/metrics', requireAuth(), async (c: Context) => {
   }
 });
 
+/**
+ * POST /_matrix/client/unstable/org.matrix.simplified_msc3575/sync
+ * Simplified Sliding Sync (MSC4186) - same as v1/sync but at unstable path
+ * Element X uses this endpoint
+ */
+app.post('/unstable/org.matrix.simplified_msc3575/sync', requireAuth(), async (c: Context) => {
+  const { optimizedHandler, monitor, streamingHandler } = getHandlers(c);
+  const userId = c.get('userId');
+  const deviceId = c.get('deviceId') || '';
+  const startTime = Date.now();
+
+  try {
+    const body = await c.req.json().catch(() => ({}));
+    const useStreaming = body.streaming === true || c.req.query('stream') === 'true';
+
+    if (useStreaming) {
+      return await streamingHandler.handleSlidingSyncStreaming(c.req.raw, userId, deviceId);
+    }
+
+    const response = await optimizedHandler.handleSlidingSync(c.req.raw, userId, deviceId);
+    
+    const duration = Date.now() - startTime;
+    await monitor.trackSyncDuration(userId, duration, Object.keys(body.lists || {}).length);
+    
+    return response;
+  } catch (error) {
+    console.error('Simplified sliding sync error:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return c.json(Errors.internal(message), 500);
+  }
+});
+
 export default app;
