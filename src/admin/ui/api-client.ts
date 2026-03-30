@@ -127,7 +127,9 @@ export const ssoFunctions = (): string => `
       icon_url: document.getElementById('idpIconUrl').value || undefined
     };
 
-    if (!idpData.name || !idpData.issuer_url || !idpData.client_id) {
+    console.log('[SSO Form] Submitting:', JSON.stringify(idpData));
+
+    if (!idpData.name || !idpData.issuer_url || !idpData.client_id || !idpData.client_secret) {
       alert('Please fill in all required fields');
       return;
     }
