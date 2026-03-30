@@ -5,6 +5,7 @@ import { createMiddleware } from 'hono/factory';
 import type { AppEnv } from '../types';
 import { Errors } from '../utils/errors';
 import { requireAuth } from '../middleware/auth';
+import { requireAdminAuth } from '../admin/auth';
 import { getUserById } from '../services/database';
 import { generateLoginToken, generateOpaqueId } from '../utils/ids';
 import { hashToken } from '../utils/crypto';
@@ -45,7 +46,7 @@ async function invalidateStatsCache(env: import('../types').Env) {
 // ============================================
 
 // GET /admin/api/registration - Get registration status
-app.get('/admin/api/registration', requireAuth(), requireAdmin, async (c) => {
+app.get('/admin/api/registration', requireAdminAuth, async (c) => {
   const db = c.env.DB;
   
   try {
@@ -63,7 +64,7 @@ app.get('/admin/api/registration', requireAuth(), requireAdmin, async (c) => {
 });
 
 // PUT /admin/api/registration - Toggle registration
-app.put('/admin/api/registration', requireAuth(), requireAdmin, async (c) => {
+app.put('/admin/api/registration', requireAdminAuth, async (c) => {
   const db = c.env.DB;
   
   let body: any;
@@ -98,7 +99,7 @@ app.put('/admin/api/registration', requireAuth(), requireAdmin, async (c) => {
 });
 
 // GET /admin/api/stats - Server statistics (via AdminDurableObject for caching)
-app.get('/admin/api/stats', requireAuth(), requireAdmin, async (c) => {
+app.get('/admin/api/stats', requireAdminAuth, async (c) => {
   const refresh = c.req.query('refresh') === 'true';
   const adminDO = getAdminDO(c.env);
 
@@ -121,7 +122,7 @@ app.get('/admin/api/stats', requireAuth(), requireAdmin, async (c) => {
 });
 
 // GET /admin/api/stats/history - Time-series statistics for dashboard charts
-app.get('/admin/api/stats/history', requireAuth(), requireAdmin, async (c) => {
+app.get('/admin/api/stats/history', requireAdminAuth, async (c) => {
   const db = c.env.DB;
   const period = c.req.query('period') || '7d';
 
@@ -187,7 +188,7 @@ app.get('/admin/api/stats/history', requireAuth(), requireAdmin, async (c) => {
 });
 
 // GET /admin/api/users - List all users
-app.get('/admin/api/users', requireAuth(), requireAdmin, async (c) => {
+app.get('/admin/api/users', requireAdminAuth, async (c) => {
   const db = c.env.DB;
   const limit = Math.min(parseInt(c.req.query('limit') || '50'), 100);
   const offset = parseInt(c.req.query('offset') || '0');
@@ -227,7 +228,7 @@ app.get('/admin/api/users', requireAuth(), requireAdmin, async (c) => {
 });
 
 // GET /admin/api/users/:userId - Get user details
-app.get('/admin/api/users/:userId', requireAuth(), requireAdmin, async (c) => {
+app.get('/admin/api/users/:userId', requireAdminAuth, async (c) => {
   const userId = decodeURIComponent(c.req.param('userId'));
   const db = c.env.DB;
 
@@ -261,7 +262,7 @@ app.get('/admin/api/users/:userId', requireAuth(), requireAdmin, async (c) => {
 });
 
 // PUT /admin/api/users/:userId - Update user
-app.put('/admin/api/users/:userId', requireAuth(), requireAdmin, async (c) => {
+app.put('/admin/api/users/:userId', requireAdminAuth, async (c) => {
   const userId = decodeURIComponent(c.req.param('userId'));
   const db = c.env.DB;
 
@@ -305,7 +306,7 @@ app.put('/admin/api/users/:userId', requireAuth(), requireAdmin, async (c) => {
 });
 
 // DELETE /admin/api/users/:userId - Deactivate user
-app.delete('/admin/api/users/:userId', requireAuth(), requireAdmin, async (c) => {
+app.delete('/admin/api/users/:userId', requireAdminAuth, async (c) => {
   const userId = decodeURIComponent(c.req.param('userId'));
   const db = c.env.DB;
 
@@ -324,7 +325,7 @@ app.delete('/admin/api/users/:userId', requireAuth(), requireAdmin, async (c) =>
 });
 
 // POST /admin/api/users/:userId/reset-password - Reset user password
-app.post('/admin/api/users/:userId/reset-password', requireAuth(), requireAdmin, async (c) => {
+app.post('/admin/api/users/:userId/reset-password', requireAdminAuth, async (c) => {
   const userId = decodeURIComponent(c.req.param('userId'));
   const db = c.env.DB;
 
@@ -355,7 +356,7 @@ app.post('/admin/api/users/:userId/reset-password', requireAuth(), requireAdmin,
 });
 
 // GET /admin/api/rooms - List all rooms
-app.get('/admin/api/rooms', requireAuth(), requireAdmin, async (c) => {
+app.get('/admin/api/rooms', requireAdminAuth, async (c) => {
   const db = c.env.DB;
   const limit = Math.min(parseInt(c.req.query('limit') || '50'), 100);
   const offset = parseInt(c.req.query('offset') || '0');
@@ -394,7 +395,7 @@ app.get('/admin/api/rooms', requireAuth(), requireAdmin, async (c) => {
 });
 
 // GET /admin/api/rooms/:roomId - Get room details
-app.get('/admin/api/rooms/:roomId', requireAuth(), requireAdmin, async (c) => {
+app.get('/admin/api/rooms/:roomId', requireAdminAuth, async (c) => {
   const roomId = decodeURIComponent(c.req.param('roomId'));
   const db = c.env.DB;
 
@@ -454,7 +455,7 @@ app.get('/admin/api/rooms/:roomId', requireAuth(), requireAdmin, async (c) => {
 });
 
 // DELETE /admin/api/rooms/:roomId - Delete room
-app.delete('/admin/api/rooms/:roomId', requireAuth(), requireAdmin, async (c) => {
+app.delete('/admin/api/rooms/:roomId', requireAdminAuth, async (c) => {
   const roomId = decodeURIComponent(c.req.param('roomId'));
   const db = c.env.DB;
 
@@ -472,7 +473,7 @@ app.delete('/admin/api/rooms/:roomId', requireAuth(), requireAdmin, async (c) =>
 });
 
 // GET /admin/api/federation/status - Get federation status
-app.get('/admin/api/federation/status', requireAuth(), requireAdmin, async (c) => {
+app.get('/admin/api/federation/status', requireAdminAuth, async (c) => {
   const db = c.env.DB;
   const serverName = c.env.SERVER_NAME;
 
@@ -500,7 +501,7 @@ app.get('/admin/api/federation/status', requireAuth(), requireAdmin, async (c) =
 });
 
 // GET /admin/api/federation/test - Run federation self-tests
-app.get('/admin/api/federation/test', requireAuth(), requireAdmin, async (c) => {
+app.get('/admin/api/federation/test', requireAdminAuth, async (c) => {
   const serverName = c.env.SERVER_NAME;
   const tests: Array<{ name: string; passed: boolean; message: string }> = [];
 
@@ -619,7 +620,7 @@ app.get('/admin/api/federation/test', requireAuth(), requireAdmin, async (c) => 
 });
 
 // GET /admin/api/federation/servers - List known federation servers
-app.get('/admin/api/federation/servers', requireAuth(), requireAdmin, async (c) => {
+app.get('/admin/api/federation/servers', requireAdminAuth, async (c) => {
   const db = c.env.DB;
 
   const servers = await db.prepare(`
@@ -632,7 +633,7 @@ app.get('/admin/api/federation/servers', requireAuth(), requireAdmin, async (c) 
 });
 
 // GET /admin/api/media - List media files
-app.get('/admin/api/media', requireAuth(), requireAdmin, async (c) => {
+app.get('/admin/api/media', requireAdminAuth, async (c) => {
   const db = c.env.DB;
   const limit = Math.min(parseInt(c.req.query('limit') || '50'), 100);
   const offset = parseInt(c.req.query('offset') || '0');
@@ -655,7 +656,7 @@ app.get('/admin/api/media', requireAuth(), requireAdmin, async (c) => {
 });
 
 // DELETE /admin/api/media/:mediaId - Delete media
-app.delete('/admin/api/media/:mediaId', requireAuth(), requireAdmin, async (c) => {
+app.delete('/admin/api/media/:mediaId', requireAdminAuth, async (c) => {
   const mediaId = c.req.param('mediaId');
   const db = c.env.DB;
 
@@ -682,7 +683,7 @@ app.delete('/admin/api/media/:mediaId', requireAuth(), requireAdmin, async (c) =
 });
 
 // POST /admin/api/media/:mediaId/quarantine - Quarantine media
-app.post('/admin/api/media/:mediaId/quarantine', requireAuth(), requireAdmin, async (c) => {
+app.post('/admin/api/media/:mediaId/quarantine', requireAdminAuth, async (c) => {
   const mediaId = c.req.param('mediaId');
   const db = c.env.DB;
 
@@ -694,7 +695,7 @@ app.post('/admin/api/media/:mediaId/quarantine', requireAuth(), requireAdmin, as
 });
 
 // GET /admin/api/config - Get server configuration
-app.get('/admin/api/config', requireAuth(), requireAdmin, async (c) => {
+app.get('/admin/api/config', requireAdminAuth, async (c) => {
   return c.json({
     server_name: c.env.SERVER_NAME,
     version: c.env.SERVER_VERSION,
@@ -711,7 +712,7 @@ app.get('/admin/api/config', requireAuth(), requireAdmin, async (c) => {
 });
 
 // POST /admin/api/make-admin - Make a user an admin
-app.post('/admin/api/make-admin', requireAuth(), requireAdmin, async (c) => {
+app.post('/admin/api/make-admin', requireAdminAuth, async (c) => {
   let body: any;
   try {
     body = await c.req.json();
@@ -732,7 +733,7 @@ app.post('/admin/api/make-admin', requireAuth(), requireAdmin, async (c) => {
 });
 
 // POST /admin/api/remove-admin - Remove admin privileges
-app.post('/admin/api/remove-admin', requireAuth(), requireAdmin, async (c) => {
+app.post('/admin/api/remove-admin', requireAdminAuth, async (c) => {
   const currentUserId = c.get('userId');
   let body: any;
   try {
@@ -759,7 +760,7 @@ app.post('/admin/api/remove-admin', requireAuth(), requireAdmin, async (c) => {
 });
 
 // DELETE /admin/api/users/:userId/purge - Completely delete user and all data
-app.delete('/admin/api/users/:userId/purge', requireAuth(), requireAdmin, async (c) => {
+app.delete('/admin/api/users/:userId/purge', requireAdminAuth, async (c) => {
   const userId = decodeURIComponent(c.req.param('userId'));
   const db = c.env.DB;
   const currentUserId = c.get('userId');
@@ -838,7 +839,7 @@ app.delete('/admin/api/users/:userId/purge', requireAuth(), requireAdmin, async 
 });
 
 // POST /admin/api/users/bulk-delete - Delete multiple users
-app.post('/admin/api/users/bulk-delete', requireAuth(), requireAdmin, async (c) => {
+app.post('/admin/api/users/bulk-delete', requireAdminAuth, async (c) => {
   const db = c.env.DB;
   const currentUserId = c.get('userId');
 
@@ -941,7 +942,7 @@ app.post('/admin/api/users/bulk-delete', requireAuth(), requireAdmin, async (c) 
 });
 
 // POST /admin/api/cleanup - Clean up all data except admin users
-app.post('/admin/api/cleanup', requireAuth(), requireAdmin, async (c) => {
+app.post('/admin/api/cleanup', requireAdminAuth, async (c) => {
   const db = c.env.DB;
 
   // Get all non-admin users
@@ -1031,7 +1032,7 @@ app.post('/admin/api/cleanup', requireAuth(), requireAdmin, async (c) => {
 });
 
 // POST /admin/api/users/:userId/reactivate - Reactivate a deactivated user
-app.post('/admin/api/users/:userId/reactivate', requireAuth(), requireAdmin, async (c) => {
+app.post('/admin/api/users/:userId/reactivate', requireAdminAuth, async (c) => {
   const userId = decodeURIComponent(c.req.param('userId'));
   const db = c.env.DB;
 
@@ -1046,7 +1047,7 @@ app.post('/admin/api/users/:userId/reactivate', requireAuth(), requireAdmin, asy
 });
 
 // POST /admin/api/users/create - Create a new user
-app.post('/admin/api/users/create', requireAuth(), requireAdmin, async (c) => {
+app.post('/admin/api/users/create', requireAdminAuth, async (c) => {
   const db = c.env.DB;
   let body: any;
   try {
@@ -1095,7 +1096,7 @@ app.post('/admin/api/users/create', requireAuth(), requireAdmin, async (c) => {
 });
 
 // GET /admin/api/users/:userId/sessions - Get user sessions/tokens
-app.get('/admin/api/users/:userId/sessions', requireAuth(), requireAdmin, async (c) => {
+app.get('/admin/api/users/:userId/sessions', requireAdminAuth, async (c) => {
   const userId = decodeURIComponent(c.req.param('userId'));
   const db = c.env.DB;
 
@@ -1110,7 +1111,7 @@ app.get('/admin/api/users/:userId/sessions', requireAuth(), requireAdmin, async 
 });
 
 // DELETE /admin/api/users/:userId/sessions - Revoke all user sessions
-app.delete('/admin/api/users/:userId/sessions', requireAuth(), requireAdmin, async (c) => {
+app.delete('/admin/api/users/:userId/sessions', requireAdminAuth, async (c) => {
   const userId = decodeURIComponent(c.req.param('userId'));
   const db = c.env.DB;
 
@@ -1122,7 +1123,7 @@ app.delete('/admin/api/users/:userId/sessions', requireAuth(), requireAdmin, asy
 });
 
 // DELETE /admin/api/sessions/:sessionId - Revoke specific session
-app.delete('/admin/api/sessions/:sessionId', requireAuth(), requireAdmin, async (c) => {
+app.delete('/admin/api/sessions/:sessionId', requireAdminAuth, async (c) => {
   const sessionId = c.req.param('sessionId');
   const db = c.env.DB;
 
@@ -1134,7 +1135,7 @@ app.delete('/admin/api/sessions/:sessionId', requireAuth(), requireAdmin, async 
 });
 
 // GET /admin/api/rooms/:roomId/events - Browse room events
-app.get('/admin/api/rooms/:roomId/events', requireAuth(), requireAdmin, async (c) => {
+app.get('/admin/api/rooms/:roomId/events', requireAdminAuth, async (c) => {
   const roomId = decodeURIComponent(c.req.param('roomId'));
   const db = c.env.DB;
   const limit = Math.min(parseInt(c.req.query('limit') || '50'), 100);
@@ -1166,7 +1167,7 @@ app.get('/admin/api/rooms/:roomId/events', requireAuth(), requireAdmin, async (c
 });
 
 // GET /admin/api/reports - Get content reports (proxy to existing endpoint format)
-app.get('/admin/api/reports', requireAuth(), requireAdmin, async (c) => {
+app.get('/admin/api/reports', requireAdminAuth, async (c) => {
   const db = c.env.DB;
   const limit = Math.min(parseInt(c.req.query('limit') || '50'), 100);
   const offset = parseInt(c.req.query('offset') || '0');
@@ -1224,7 +1225,7 @@ app.get('/admin/api/reports', requireAuth(), requireAdmin, async (c) => {
 });
 
 // POST /admin/api/reports/:reportId/resolve - Resolve a report
-app.post('/admin/api/reports/:reportId/resolve', requireAuth(), requireAdmin, async (c) => {
+app.post('/admin/api/reports/:reportId/resolve', requireAdminAuth, async (c) => {
   const userId = c.get('userId');
   const reportId = c.req.param('reportId');
   const db = c.env.DB;
@@ -1253,7 +1254,7 @@ app.post('/admin/api/reports/:reportId/resolve', requireAuth(), requireAdmin, as
 });
 
 // POST /admin/api/reports/:reportId/unresolve - Unresolve a report
-app.post('/admin/api/reports/:reportId/unresolve', requireAuth(), requireAdmin, async (c) => {
+app.post('/admin/api/reports/:reportId/unresolve', requireAdminAuth, async (c) => {
   const reportId = c.req.param('reportId');
   const db = c.env.DB;
 
@@ -1274,7 +1275,7 @@ app.post('/admin/api/reports/:reportId/unresolve', requireAuth(), requireAdmin, 
 });
 
 // POST /admin/api/server-notice - Send server notice to user
-app.post('/admin/api/server-notice', requireAuth(), requireAdmin, async (c) => {
+app.post('/admin/api/server-notice', requireAdminAuth, async (c) => {
   const db = c.env.DB;
   let body: any;
   try {
@@ -1339,7 +1340,7 @@ app.post('/admin/api/server-notice', requireAuth(), requireAdmin, async (c) => {
 // ============================================
 
 // GET /admin/api/registration (via AdminDurableObject) - kept for backward compatibility
-app.get('/admin/api/registration/do', requireAuth(), requireAdmin, async (c) => {
+app.get('/admin/api/registration/do', requireAdminAuth, async (c) => {
   const adminDO = getAdminDO(c.env);
   const response = await adminDO.fetch('http://internal/config');
   const config = await response.json() as { registration_enabled: boolean };
@@ -1350,7 +1351,7 @@ app.get('/admin/api/registration/do', requireAuth(), requireAdmin, async (c) => 
 });
 
 // PUT /admin/api/registration (via AdminDurableObject) - kept for backward compatibility
-app.put('/admin/api/registration/do', requireAuth(), requireAdmin, async (c) => {
+app.put('/admin/api/registration/do', requireAdminAuth, async (c) => {
   let body: any;
   try {
     body = await c.req.json();
@@ -1378,7 +1379,7 @@ app.put('/admin/api/registration/do', requireAuth(), requireAdmin, async (c) => 
 });
 
 // POST /admin/api/users/:userId/login-token - Generate a one-time login token for QR code auth
-app.post('/admin/api/users/:userId/login-token', requireAuth(), requireAdmin, async (c) => {
+app.post('/admin/api/users/:userId/login-token', requireAdminAuth, async (c) => {
   const userId = decodeURIComponent(c.req.param('userId'));
   const db = c.env.DB;
 
@@ -1456,7 +1457,7 @@ interface IdPProvider {
 }
 
 // GET /admin/api/idp/providers - List all IdP providers
-app.get('/admin/api/idp/providers', requireAuth(), requireAdmin, async (c) => {
+app.get('/admin/api/idp/providers', requireAdminAuth, async (c) => {
   const db = c.env.DB;
 
   const result = await db.prepare(`
@@ -1484,7 +1485,7 @@ app.get('/admin/api/idp/providers', requireAuth(), requireAdmin, async (c) => {
 });
 
 // POST /admin/api/idp/providers - Create new IdP provider
-app.post('/admin/api/idp/providers', requireAuth(), requireAdmin, async (c) => {
+app.post('/admin/api/idp/providers', requireAdminAuth, async (c) => {
   const db = c.env.DB;
   let body: any;
 
@@ -1546,7 +1547,7 @@ app.post('/admin/api/idp/providers', requireAuth(), requireAdmin, async (c) => {
 });
 
 // GET /admin/api/idp/providers/:id - Get IdP provider details
-app.get('/admin/api/idp/providers/:id', requireAuth(), requireAdmin, async (c) => {
+app.get('/admin/api/idp/providers/:id', requireAdminAuth, async (c) => {
   const id = c.req.param('id');
   const db = c.env.DB;
 
@@ -1586,7 +1587,7 @@ app.get('/admin/api/idp/providers/:id', requireAuth(), requireAdmin, async (c) =
 });
 
 // PUT /admin/api/idp/providers/:id - Update IdP provider
-app.put('/admin/api/idp/providers/:id', requireAuth(), requireAdmin, async (c) => {
+app.put('/admin/api/idp/providers/:id', requireAdminAuth, async (c) => {
   const id = c.req.param('id');
   const db = c.env.DB;
   let body: any;
@@ -1673,7 +1674,7 @@ app.put('/admin/api/idp/providers/:id', requireAuth(), requireAdmin, async (c) =
 });
 
 // DELETE /admin/api/idp/providers/:id - Delete IdP provider
-app.delete('/admin/api/idp/providers/:id', requireAuth(), requireAdmin, async (c) => {
+app.delete('/admin/api/idp/providers/:id', requireAdminAuth, async (c) => {
   const id = c.req.param('id');
   const db = c.env.DB;
 
@@ -1690,7 +1691,7 @@ app.delete('/admin/api/idp/providers/:id', requireAuth(), requireAdmin, async (c
 });
 
 // DELETE /admin/api/idp/providers/:id/links/:linkId - Remove a user link
-app.delete('/admin/api/idp/providers/:id/links/:linkId', requireAuth(), requireAdmin, async (c) => {
+app.delete('/admin/api/idp/providers/:id/links/:linkId', requireAdminAuth, async (c) => {
   const providerId = c.req.param('id');
   const linkId = c.req.param('linkId');
   const db = c.env.DB;
@@ -1703,7 +1704,7 @@ app.delete('/admin/api/idp/providers/:id/links/:linkId', requireAuth(), requireA
 });
 
 // POST /admin/api/idp/providers/:id/test - Test IdP connection
-app.post('/admin/api/idp/providers/:id/test', requireAuth(), requireAdmin, async (c) => {
+app.post('/admin/api/idp/providers/:id/test', requireAdminAuth, async (c) => {
   const id = c.req.param('id');
   const db = c.env.DB;
 
@@ -1741,7 +1742,7 @@ app.post('/admin/api/idp/providers/:id/test', requireAuth(), requireAdmin, async
 // ============================================
 
 // GET /admin/api/users/:userId/keys - Debug E2EE key state for a user
-app.get('/admin/api/users/:userId/keys', requireAuth(), requireAdmin, async (c) => {
+app.get('/admin/api/users/:userId/keys', requireAdminAuth, async (c) => {
   const userId = decodeURIComponent(c.req.param('userId'));
   const db = c.env.DB;
 
@@ -1888,7 +1889,7 @@ app.get('/_matrix/client/v3/admin/whois/:userId', requireAuth(), async (c) => {
 // ============================================
 
 // GET /_synapse/admin/v1/server_version - Server version info (Synapse format)
-app.get('/_synapse/admin/v1/server_version', requireAuth(), requireAdmin, async (c) => {
+app.get('/_synapse/admin/v1/server_version', requireAdminAuth, async (c) => {
   return c.json({
     server_version: c.env.SERVER_VERSION,
     python_version: 'N/A (Cloudflare Workers)',
@@ -1896,7 +1897,7 @@ app.get('/_synapse/admin/v1/server_version', requireAuth(), requireAdmin, async 
 });
 
 // GET /_synapse/admin/v2/users - List users (Synapse format)
-app.get('/_synapse/admin/v2/users', requireAuth(), requireAdmin, async (c) => {
+app.get('/_synapse/admin/v2/users', requireAdminAuth, async (c) => {
   const db = c.env.DB;
   const limit = Math.min(parseInt(c.req.query('limit') || '100'), 1000);
   const from = parseInt(c.req.query('from') || '0');
@@ -1935,7 +1936,7 @@ app.get('/_synapse/admin/v2/users', requireAuth(), requireAdmin, async (c) => {
 });
 
 // GET /_synapse/admin/v2/users/:userId - User details (Synapse format)
-app.get('/_synapse/admin/v2/users/:userId', requireAuth(), requireAdmin, async (c) => {
+app.get('/_synapse/admin/v2/users/:userId', requireAdminAuth, async (c) => {
   const userId = decodeURIComponent(c.req.param('userId'));
   const db = c.env.DB;
 
@@ -1966,7 +1967,7 @@ app.get('/_synapse/admin/v2/users/:userId', requireAuth(), requireAdmin, async (
 });
 
 // POST /_synapse/admin/v1/deactivate/:userId - Deactivate user (Synapse format)
-app.post('/_synapse/admin/v1/deactivate/:userId', requireAuth(), requireAdmin, async (c) => {
+app.post('/_synapse/admin/v1/deactivate/:userId', requireAdminAuth, async (c) => {
   const userId = decodeURIComponent(c.req.param('userId'));
   const db = c.env.DB;
 
@@ -1990,7 +1991,7 @@ app.post('/_synapse/admin/v1/deactivate/:userId', requireAuth(), requireAdmin, a
 });
 
 // POST /_synapse/admin/v1/reset_password/:userId - Reset password (Synapse format)
-app.post('/_synapse/admin/v1/reset_password/:userId', requireAuth(), requireAdmin, async (c) => {
+app.post('/_synapse/admin/v1/reset_password/:userId', requireAdminAuth, async (c) => {
   const userId = decodeURIComponent(c.req.param('userId'));
   const db = c.env.DB;
 
@@ -2029,7 +2030,7 @@ app.post('/_synapse/admin/v1/reset_password/:userId', requireAuth(), requireAdmi
 });
 
 // GET /_synapse/admin/v1/rooms - List rooms (Synapse format)
-app.get('/_synapse/admin/v1/rooms', requireAuth(), requireAdmin, async (c) => {
+app.get('/_synapse/admin/v1/rooms', requireAdminAuth, async (c) => {
   const db = c.env.DB;
   const limit = Math.min(parseInt(c.req.query('limit') || '100'), 1000);
   const from = parseInt(c.req.query('from') || '0');
@@ -2117,7 +2118,7 @@ app.get('/_synapse/admin/v1/rooms', requireAuth(), requireAdmin, async (c) => {
 });
 
 // GET /_synapse/admin/v1/rooms/:roomId - Room details (Synapse format)
-app.get('/_synapse/admin/v1/rooms/:roomId', requireAuth(), requireAdmin, async (c) => {
+app.get('/_synapse/admin/v1/rooms/:roomId', requireAdminAuth, async (c) => {
   const roomId = decodeURIComponent(c.req.param('roomId'));
   const db = c.env.DB;
 
@@ -2189,7 +2190,7 @@ app.get('/_synapse/admin/v1/rooms/:roomId', requireAuth(), requireAdmin, async (
 });
 
 // GET /_synapse/admin/v1/federation/destinations - Federation destinations (Synapse format)
-app.get('/_synapse/admin/v1/federation/destinations', requireAuth(), requireAdmin, async (c) => {
+app.get('/_synapse/admin/v1/federation/destinations', requireAdminAuth, async (c) => {
   const db = c.env.DB;
   const limit = Math.min(parseInt(c.req.query('limit') || '100'), 1000);
   const from = parseInt(c.req.query('from') || '0');
@@ -2218,7 +2219,7 @@ app.get('/_synapse/admin/v1/federation/destinations', requireAuth(), requireAdmi
 });
 
 // GET /_synapse/admin/v1/event_reports - Event reports (Synapse format)
-app.get('/_synapse/admin/v1/event_reports', requireAuth(), requireAdmin, async (c) => {
+app.get('/_synapse/admin/v1/event_reports', requireAdminAuth, async (c) => {
   const db = c.env.DB;
   const limit = Math.min(parseInt(c.req.query('limit') || '100'), 1000);
   const from = parseInt(c.req.query('from') || '0');
@@ -2270,7 +2271,7 @@ app.get('/_synapse/admin/v1/event_reports', requireAuth(), requireAdmin, async (
 });
 
 // DELETE /_synapse/admin/v1/rooms/:roomId - Delete room (Synapse format)
-app.delete('/_synapse/admin/v1/rooms/:roomId', requireAuth(), requireAdmin, async (c) => {
+app.delete('/_synapse/admin/v1/rooms/:roomId', requireAdminAuth, async (c) => {
   const roomId = decodeURIComponent(c.req.param('roomId'));
   const db = c.env.DB;
 
@@ -2299,7 +2300,7 @@ app.delete('/_synapse/admin/v1/rooms/:roomId', requireAuth(), requireAdmin, asyn
 });
 
 // PUT /_synapse/admin/v2/users/:userId - Create or modify user (Synapse format)
-app.put('/_synapse/admin/v2/users/:userId', requireAuth(), requireAdmin, async (c) => {
+app.put('/_synapse/admin/v2/users/:userId', requireAdminAuth, async (c) => {
   const userId = decodeURIComponent(c.req.param('userId'));
   const db = c.env.DB;
 
@@ -2404,7 +2405,7 @@ app.put('/_synapse/admin/v2/users/:userId', requireAuth(), requireAdmin, async (
 // ============================================
 
 // Get request metrics from Analytics Engine
-app.get('/_matrix/client/v3/admin/analytics/requests', requireAuth(), requireAdmin, async (c) => {
+app.get('/_matrix/client/v3/admin/analytics/requests', requireAdminAuth, async (c) => {
   const db = c.env.DB;
   const period = c.req.query('period') || '1h';
 
@@ -2449,7 +2450,7 @@ app.get('/_matrix/client/v3/admin/analytics/requests', requireAuth(), requireAdm
 });
 
 // Get federation metrics
-app.get('/_matrix/client/v3/admin/analytics/federation', requireAuth(), requireAdmin, async (c) => {
+app.get('/_matrix/client/v3/admin/analytics/federation', requireAdminAuth, async (c) => {
   const db = c.env.DB;
   const period = c.req.query('period') || '24h';
 
