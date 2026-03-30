@@ -9,8 +9,11 @@ export const ssoFunctions = (): string => `
     document.getElementById('noSso').style.display = 'none';
 
     try {
+      console.log('[loadSso] Fetching providers...');
       const data = await api.get('/idp/providers');
+      console.log('[loadSso] Response:', data);
       currentIdps = data.providers || [];
+      console.log('[loadSso] Providers:', currentIdps);
       
       if (currentIdps.length === 0) {
         document.getElementById('ssoLoading').style.display = 'none';
