@@ -202,8 +202,10 @@ app.post('/_matrix/client/v1/sync', requireAuth(), async (c: Context) => {
       return await streamingHandler.handleSlidingSyncStreaming(c.req.raw, userId, deviceId);
     }
 
+    // Clone request because body was already consumed by c.req.json()
+    const clonedReq = c.req.raw.clone();
     // Use optimized handler for standard JSON response
-    const response = await optimizedHandler.handleSlidingSync(c.req.raw, userId, deviceId);
+    const response = await optimizedHandler.handleSlidingSync(clonedReq, userId, deviceId);
     
     // Track performance
     const duration = Date.now() - startTime;
@@ -465,7 +467,9 @@ app.post('/_matrix/client/unstable/org.matrix.simplified_msc3575/sync', requireA
       return await streamingHandler.handleSlidingSyncStreaming(c.req.raw, userId, deviceId);
     }
 
-    const response = await optimizedHandler.handleSlidingSync(c.req.raw, userId, deviceId);
+    // Clone request because body was already consumed by c.req.json()
+    const clonedReq = c.req.raw.clone();
+    const response = await optimizedHandler.handleSlidingSync(clonedReq, userId, deviceId);
     
     const duration = Date.now() - startTime;
     await monitor.trackSyncDuration(userId, duration, Object.keys(body.lists || {}).length);
