@@ -186,7 +186,7 @@ export interface ConnectionState {
  * POST /_matrix/client/v1/sync
  * Sliding Sync endpoint with performance optimizations
  */
-app.post('/v1/sync', requireAuth(), async (c: Context) => {
+app.post('/_matrix/client/v1/sync', requireAuth(), async (c: Context) => {
   const { optimizedHandler, monitor } = getHandlers(c);
   const userId = c.get('userId');
   const deviceId = c.get('deviceId'); //get device id
@@ -221,7 +221,7 @@ app.post('/v1/sync', requireAuth(), async (c: Context) => {
  * GET /_matrix/client/v1/sync
  * Long-polling fallback for clients that don't support POST
  */
-app.get('/v1/sync', requireAuth(), async (c: Context) => {
+app.get('/_matrix/client/v1/sync', requireAuth(), async (c: Context) => {
   const { optimizedHandler } = getHandlers(c);
   const userId = c.get('userId');
   const deviceId = c.get('deviceId') || '';
@@ -260,7 +260,7 @@ app.get('/v1/sync', requireAuth(), async (c: Context) => {
  * POST /_matrix/client/v1/sync/stream
  * Explicit streaming endpoint (alternative to ?stream=true)
  */
-app.post('/v1/sync/stream', requireAuth(), async (c: Context) => {
+app.post('/_matrix/client/v1/sync/stream', requireAuth(), async (c: Context) => {
   const { streamingHandler } = getHandlers(c);
   const userId = c.get('userId');
   const deviceId = c.get('deviceId') || '';
@@ -278,7 +278,7 @@ app.post('/v1/sync/stream', requireAuth(), async (c: Context) => {
  * POST /_matrix/client/v1/sync/precompute
  * Admin endpoint to trigger list precomputation (admin only)
  */
-app.post('/v1/sync/precompute', requireAuth(), async (c: Context) => {
+app.post('/_matrix/client/v1/sync/precompute', requireAuth(), async (c: Context) => {
   const { precomputedManager } = getHandlers(c);
   const userId = c.get('userId');
   const isAdmin = c.get('isAdmin') || false;
@@ -308,7 +308,7 @@ app.post('/v1/sync/precompute', requireAuth(), async (c: Context) => {
  * GET /_matrix/client/v1/sync/health
  * Health check endpoint for monitoring
  */
-app.get('/v1/sync/health', async (c: Context) => {
+app.get('/_matrix/client/v1/sync/health', async (c: Context) => {
   const { monitor, pool } = getHandlers(c);
   
   try {
@@ -333,7 +333,7 @@ app.get('/v1/sync/health', async (c: Context) => {
  * POST /_matrix/client/v1/sync/invalidate
  * Invalidate cache for a user (for debugging)
  */
-app.post('/v1/sync/invalidate', requireAuth(), async (c: Context) => {
+app.post('/_matrix/client/v1/sync/invalidate', requireAuth(), async (c: Context) => {
   const { cacheHandler, precomputedManager } = getHandlers(c);
   const userId = c.get('userId');
   
@@ -361,7 +361,7 @@ app.post('/v1/sync/invalidate', requireAuth(), async (c: Context) => {
  * GET /_matrix/client/v3/sync
  * Legacy sync endpoint that now uses sliding sync internally
  */
-app.get('/v3/sync', requireAuth(), async (c: Context) => {
+app.get('/_matrix/client/v3/sync', requireAuth(), async (c: Context) => {
   const { optimizedHandler } = getHandlers(c);
   const userId = c.get('userId');
   const deviceId = c.get('deviceId') || '';
@@ -416,7 +416,7 @@ app.get('/v3/sync', requireAuth(), async (c: Context) => {
  * GET /_matrix/client/v1/sync/metrics
  * Get performance metrics (admin only)
  */
-app.get('/v1/sync/metrics', requireAuth(), async (c: Context) => {
+app.get('/_matrix/client/v1/sync/metrics', requireAuth(), async (c: Context) => {
   const { monitor } = getHandlers(c);
   const isAdmin = c.get('isAdmin') || false;
   
@@ -444,7 +444,7 @@ app.get('/v1/sync/metrics', requireAuth(), async (c: Context) => {
  * Simplified Sliding Sync (MSC4186) - same as v1/sync but at unstable path
  * Element X uses this endpoint
  */
-app.post('/unstable/org.matrix.simplified_msc3575/sync', requireAuth(), async (c: Context) => {
+app.post('/_matrix/client/unstable/org.matrix.simplified_msc3575/sync', requireAuth(), async (c: Context) => {
   const { optimizedHandler, monitor, streamingHandler } = getHandlers(c);
   const userId = c.get('userId');
   const deviceId = c.get('deviceId') || '';

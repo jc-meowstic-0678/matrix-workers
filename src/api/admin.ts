@@ -753,9 +753,6 @@ app.delete('/admin/api/users/:userId/purge', requireAdminAuth, async (c) => {
     return Errors.forbidden('Cannot delete your own account').toResponse();
   }
 
-  // Get devices BEFORE deleting them (for KV cleanup)
-  const devices = await db.prepare('SELECT device_id FROM devices WHERE user_id = ?').bind(userId).all<{ device_id: string }>();
-
   // Get and delete media BEFORE deleting user (FK constraint without CASCADE)
   const media = await db.prepare('SELECT media_id FROM media WHERE user_id = ?').bind(userId).all<{ media_id: string }>();
   for (const m of media.results) {
@@ -849,9 +846,6 @@ app.post('/admin/api/users/bulk-delete', requireAdminAuth, async (c) => {
   // Delete all user data for each user
   let deleted = 0;
   for (const userId of user_ids) {
-    // Get devices BEFORE deleting (for KV cleanup)
-    const devices = await db.prepare('SELECT device_id FROM devices WHERE user_id = ?').bind(userId).all<{ device_id: string }>();
-    
     // Delete media BEFORE user (FK constraint without CASCADE)
     const media = await db.prepare('SELECT media_id FROM media WHERE user_id = ?').bind(userId).all<{ media_id: string }>();
     for (const m of media.results) {
@@ -918,11 +912,6 @@ app.post('/admin/api/cleanup', requireAdminAuth, async (c) => {
     SELECT user_id FROM users WHERE admin = 0
   `).all<{ user_id: string }>();
   const userIds = users.results.map(u => u.user_id);
-
-  // Get all devices for KV cleanup
-  const allDevices = await db.prepare(`
-    SELECT user_id, device_id FROM devices WHERE user_id IN (SELECT user_id FROM users WHERE admin = 0)
-  `).all<{ user_id: string; device_id: string }>();
 
   // Delete user-related data for each non-admin user
   for (const userId of userIds) {
