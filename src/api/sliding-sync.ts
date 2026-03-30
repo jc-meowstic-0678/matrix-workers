@@ -193,23 +193,22 @@ app.post('/_matrix/client/v1/sync', requireAuth(), async (c: Context) => {
   const startTime = Date.now();
 
   try {
-    // Check if client requested streaming mode
-    const body = await c.req.json().catch(() => ({}));
-    const useStreaming = body.streaming === true || c.req.query('stream') === 'true';
+    // Clone request FIRST to avoid ReadableStream lock issues
+    const clonedReq = c.req.raw.clone();
+    const body = await clonedReq.clone().json<SlidingSyncRequest>().catch(() => ({} as SlidingSyncRequest));
+    const useStreaming = (body as SlidingSyncRequest).streaming === true || c.req.query('stream') === 'true';
 
     if (useStreaming) {
-      // Delegate to streaming handler
-      return await streamingHandler.handleSlidingSyncStreaming(c.req.raw, userId, deviceId);
+      // Delegate to streaming handler (body not consumed on this clone)
+      return await streamingHandler.handleSlidingSyncStreaming(clonedReq.clone(), userId, deviceId);
     }
 
-    // Clone request because body was already consumed by c.req.json()
-    const clonedReq = c.req.raw.clone();
-    // Use optimized handler for standard JSON response
+    // Use optimized handler for standard JSON response (body consumed via clone above)
     const response = await optimizedHandler.handleSlidingSync(clonedReq, userId, deviceId);
     
     // Track performance
     const duration = Date.now() - startTime;
-    await monitor.trackSyncDuration(userId, duration, Object.keys(body.lists || {}).length);
+    await monitor.trackSyncDuration(userId, duration, Object.keys((body as SlidingSyncRequest).lists || {}).length);
     
     return response;
   } catch (error) {
@@ -460,19 +459,21 @@ app.post('/_matrix/client/unstable/org.matrix.simplified_msc3575/sync', requireA
   const startTime = Date.now();
 
   try {
-    const body = await c.req.json().catch(() => ({}));
-    const useStreaming = body.streaming === true || c.req.query('stream') === 'true';
+    // Clone request FIRST to avoid ReadableStream lock issues
+    const clonedReq = c.req.raw.clone();
+    const body = await clonedReq.clone().json<SlidingSyncRequest>().catch(() => ({} as SlidingSyncRequest));
+    const useStreaming = (body as SlidingSyncRequest).streaming === true || c.req.query('stream') === 'true';
 
     if (useStreaming) {
-      return await streamingHandler.handleSlidingSyncStreaming(c.req.raw, userId, deviceId);
+      // Use cloned request - body not yet consumed on this clone
+      return await streamingHandler.handleSlidingSyncStreaming(clonedReq.clone(), userId, deviceId);
     }
 
-    // Clone request because body was already consumed by c.req.json()
-    const clonedReq = c.req.raw.clone();
+    // Use optimized handler for standard JSON response (body consumed via clone above)
     const response = await optimizedHandler.handleSlidingSync(clonedReq, userId, deviceId);
     
     const duration = Date.now() - startTime;
-    await monitor.trackSyncDuration(userId, duration, Object.keys(body.lists || {}).length);
+    await monitor.trackSyncDuration(userId, duration, Object.keys((body as SlidingSyncRequest).lists || {}).length);
     
     return response;
   } catch (error) {
