@@ -62,11 +62,15 @@ idpApi.post('/providers', requireAdminAuth, async (c) => {
   try { body = await c.req.json(); } catch { return Errors.badJson().toResponse(); }
   const { name, issuer_url, client_id, client_secret, scopes, auto_create_users, username_claim, icon_url } = body;
   if (!name || !issuer_url || !client_id || !client_secret) return Errors.missingParam('name, issuer_url, client_id, and client_secret are required').toResponse();
-  try { await fetchOIDCDiscovery(issuer_url); } catch (err) { return c.json({ errcode: 'M_INVALID_PARAM', error: `Failed to fetch OIDC discovery: ${err}` }, 400); }
+  
+  // Try OIDC discovery but don't fail if it doesn't work (some IdPs may block Cloudflare Workers)
+  let discoveryWarning = '';
+  try { await fetchOIDCDiscovery(issuer_url); } catch (err) { discoveryWarning = `Warning: Could not validate OIDC discovery: ${err}. Provider may need manual configuration.`; }
+  
   const id = await generateOpaqueId(12);
   const encryptedSecret = await encryptSecret(client_secret, c.env);
   await db.prepare(`INSERT INTO idp_providers (id, name, issuer_url, client_id, client_secret_encrypted, scopes, enabled, auto_create_users, username_claim, icon_url, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)`).bind(id, name, issuer_url.replace(/\/$/, ''), client_id, encryptedSecret, scopes || 'openid profile email', auto_create_users !== false ? 1 : 0, username_claim || 'email', icon_url || null, Date.now(), Date.now()).run();
-  return c.json({ id, name, issuer_url, client_id, scopes: scopes || 'openid profile email', enabled: true, auto_create_users: auto_create_users !== false, username_claim: username_claim || 'email', icon_url: icon_url || null });
+  return c.json({ id, name, issuer_url, client_id, scopes: scopes || 'openid profile email', enabled: true, auto_create_users: auto_create_users !== false, username_claim: username_claim || 'email', icon_url: icon_url || null, warning: discoveryWarning || undefined });
 });
 
 idpApi.get('/providers/:id', requireAdminAuth, async (c) => {
