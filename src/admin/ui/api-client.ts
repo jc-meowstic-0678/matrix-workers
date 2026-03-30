@@ -51,7 +51,8 @@ export const ssoFunctions = (): string => `
     try {
       if (isNew) {
         const result = await api.post('/idp/providers', idpData);
-        alert('Provider created successfully!\n\nProvider ID: ' + result.id + '\n\nConfigure your OAuth redirect URI to:\nhttps://' + window.location.host + '/auth/oidc/' + result.id + '/callback');
+        const msg = 'Provider created successfully! Provider ID: ' + result.id + ' Redirect URI: https://' + window.location.host + '/auth/oidc/' + result.id + '/callback';
+        alert(msg);
       } else {
         await api.put('/idp/providers/' + idpData.id, idpData);
       }
