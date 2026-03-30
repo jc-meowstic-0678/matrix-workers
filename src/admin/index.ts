@@ -60,9 +60,7 @@ idpApi.post('/providers', requireAdminAuth, async (c) => {
   const db = c.env.DB;
   let body: any;
   try { body = await c.req.json(); } catch { return Errors.badJson().toResponse(); }
-  console.log('[IdP Create] Received body:', JSON.stringify(body));
   const { name, issuer_url, client_id, client_secret, scopes, auto_create_users, username_claim, icon_url } = body;
-  console.log('[IdP Create] Parsed fields:', { name, issuer_url, client_id, client_secret: client_secret ? '(set)' : '(empty)' });
   if (!name || !issuer_url || !client_id || !client_secret) return Errors.missingParam('name, issuer_url, client_id, and client_secret are required').toResponse();
   
   // Try OIDC discovery but don't fail if it doesn't work (some IdPs may block Cloudflare Workers)

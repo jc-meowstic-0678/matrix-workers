@@ -25,6 +25,7 @@ export const ssoFunctions = (): string => `
         const tr = document.createElement('tr');
         tr.innerHTML = \`
           <td>\${idp.name}</td>
+          <td><code style="font-size: 11px;">\${idp.id}</code></td>
           <td>\${idp.issuer_url}</td>
           <td>\${idp.enabled ? '<span class="badge badge-success">Enabled</span>' : '<span class="badge badge-secondary">Disabled</span>'}</td>
           <td>\${idp.auto_create_users ? '<span class="badge badge-success">Yes</span>' : '<span class="badge badge-warning">No</span>'}</td>
@@ -49,7 +50,8 @@ export const ssoFunctions = (): string => `
   async function saveIdp(idpData, isNew) {
     try {
       if (isNew) {
-        await api.post('/idp/providers', idpData);
+        const result = await api.post('/idp/providers', idpData);
+        alert('Provider created successfully!\n\nProvider ID: ' + result.id + '\n\nConfigure your OAuth redirect URI to:\nhttps://' + window.location.host + '/auth/oidc/' + result.id + '/callback');
       } else {
         await api.put('/idp/providers/' + idpData.id, idpData);
       }
@@ -64,7 +66,7 @@ export const ssoFunctions = (): string => `
     const idp = currentIdps.find(i => i.id === id);
     if (!idp) return;
     
-    document.getElementById('idpModalTitle').textContent = 'Edit SSO Provider';
+    document.getElementById('idpModalTitle').textContent = 'Edit SSO Provider - ID: ' + idp.id;
     document.getElementById('idpId').value = idp.id;
     document.getElementById('idpName').value = idp.name;
     document.getElementById('idpIssuer').value = idp.issuer_url;

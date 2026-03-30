@@ -41,6 +41,7 @@ export const ssoView = (serverName?: string): string => `
           <thead>
             <tr>
               <th>Name</th>
+              <th>Provider ID</th>
               <th>Issuer URL</th>
               <th>Status</th>
               <th>Auto-create Users</th>
