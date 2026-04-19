@@ -149,7 +149,9 @@ app.post('/_matrix/client/v3/search', requireAuth(), async (c) => {
   if (nextBatch) {
     try {
       offset = parseInt(nextBatch, 10);
-    } catch {}
+    } catch (e) {
+      console.warn('Failed to parse search nextBatch:', e);
+    }
   }
 
   // Use FTS5 MATCH for full-text search with BM25 ranking
@@ -231,7 +233,9 @@ app.post('/_matrix/client/v3/search', requireAuth(), async (c) => {
     let content: Record<string, any> = {};
     try {
       content = JSON.parse(event.content);
-    } catch {}
+    } catch (e) {
+      console.warn('Failed to parse event content:', e);
+    }
 
     const result: SearchResult = {
       event_id: event.event_id,

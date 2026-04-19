@@ -214,7 +214,9 @@ async function getRoomInfo(
     try {
       const content = JSON.parse(createEvent.content);
       roomType = content.type;
-    } catch {}
+    } catch (e) {
+      console.warn('Failed to parse create event content:', e);
+    }
   }
 
   let historyVisibility = 'shared';
@@ -222,7 +224,9 @@ async function getRoomInfo(
     try {
       const content = JSON.parse(historyEvent.content);
       historyVisibility = content.history_visibility;
-    } catch {}
+    } catch (e) {
+      console.warn('Failed to parse history event content:', e);
+    }
   }
 
   let guestAccess = 'forbidden';
@@ -230,7 +234,9 @@ async function getRoomInfo(
     try {
       const content = JSON.parse(guestEvent.content);
       guestAccess = content.guest_access;
-    } catch {}
+    } catch (e) {
+      console.warn('Failed to parse guest event content:', e);
+    }
   }
 
   return {

@@ -809,12 +809,16 @@ app.get('/_matrix/client/v3/notifications', requireAuth(), async (c) => {
     let content = {};
     try {
       content = JSON.parse(n.content || '{}');
-    } catch {}
+    } catch (e) {
+      console.warn('Failed to parse notification content:', e);
+    }
 
     let actions: any[] = [];
     try {
       actions = JSON.parse(n.actions || '[]');
-    } catch {}
+    } catch (e) {
+      console.warn('Failed to parse notification actions:', e);
+    }
 
     return {
       room_id: n.room_id,
@@ -1462,7 +1466,9 @@ export async function notifyRoomMembersOfMessage(
     try {
       const content = JSON.parse(roomNameEvent.content);
       roomName = content.name;
-    } catch {}
+    } catch (e) {
+      console.warn('Failed to parse room name event:', e);
+    }
   }
 
   // For DM rooms without explicit name, use the sender's display name as room name

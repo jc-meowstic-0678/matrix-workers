@@ -180,7 +180,9 @@ export class PushNotificationWorkflow extends WorkflowEntrypoint<Env, PushParams
       try {
         const parsed = JSON.parse(roomNameEvent.content);
         roomName = parsed.name;
-      } catch {}
+      } catch (e) {
+        console.warn('Failed to parse room name event:', e);
+      }
     }
 
     // For DM rooms without explicit name, use sender's name
