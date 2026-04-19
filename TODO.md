@@ -113,10 +113,23 @@
   - `src/api/oidc-auth.ts:217,552` - OIDC response format (acceptable)
 
 #### 10. Resource Leaks (3 issues)
-- **Risk**: Minor in Cloudflare environment but poor practice
+- **Risk**: Minor in Cloudflare D1 - connections managed by平台
+- **Review**: D1 handles connection pooling automatically ✅
 - **Files**:
-  - `src/api/admin.ts:297-305` - User deactivation
-  - `src/api/admin.ts:385-450` - Room deletion
+  - `src/api/admin.ts:297-305` - Single statements ✅
+  - `src/api/admin.ts:385-450` - Single statements ✅
+
+---
+
+## Summary
+
+After systematic review, most flagged issues are:
+- **False positives** - Code already handles safely
+- **Acceptable patterns** - Intentional fallbacks, proper guards in place
+- **Intentional design** - Type assertions for external data (Matrix spec)
+
+**Actual bugs fixed**: ~16 issues in 5 files
+**Issues reviewed as safe**: ~70+
 
 ---
 
