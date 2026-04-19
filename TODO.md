@@ -150,6 +150,7 @@ After systematic review, most flagged issues are:
 
 ### KV Operations (~76 operations)
 - **Sessions**: Proper TTL expiration in SESSIONS ✅
+  - Token rotation fixed: create-before-delete ✅
 - **Cache**: TTL-based expiration in CACHE ✅
 - **ACCOUNT_DATA**: Fallback storage working ✅
 
