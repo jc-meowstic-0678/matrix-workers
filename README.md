@@ -89,6 +89,38 @@ src/
 migrations/               # D1 schema files (001-013)
 ```
 
+### Code Overview
+
+A quick guide to navigating the codebase:
+
+**API Handlers** (`src/api/*.ts`) - Each file handles one Matrix feature area:
+
+| File | Handles |
+|------|---------|
+| `rooms.ts` | Room creation, state, events |
+| `login.ts` | Authentication, tokens |
+| `keys.ts` | E2EE, cross-signing, OTKs |
+| `federation.ts` | Server-Server API |
+| `push.ts` | Push notifications |
+| `sync.ts` | Sync responses |
+
+**Services** (`src/services/*.ts`) - Shared business logic:
+
+| File | Handles |
+|------|---------|
+| `database.ts` | All D1 queries |
+| `event-auth.ts` | Event authorization |
+| `federation-keys.ts` | Remote key fetching |
+
+**Durable Objects** (`src/durable-objects/*.ts`):
+
+| Object | Purpose |
+|--------|---------|
+| `RoomDurableObject.ts` | Room event storage |
+| `SyncDurableObject.ts` | User sync state |
+| `UserKeysDurableObject.ts` | E2EE keys |
+| `RateLimitDurableObject.ts` | Distributed rate limits |
+
 ### Storage Bindings
 
 ```json
@@ -199,6 +231,31 @@ npm run lint             # ESLint
 npm run test             # Vitest
 npm run db:migrate       # Run migrations (remote)
 npm run db:migrate:local # Run migrations (local)
+```
+
+## Code Patterns
+
+Quick reference for understanding the code:
+
+**Error Handling** - Uses `Errors` class from `src/utils/errors.ts`:
+```typescript
+return Errors.notFound('User not found').toResponse();
+```
+
+**Database Access** - Via D1 with parameterized queries:
+```typescript
+await db.prepare('SELECT * FROM users WHERE user_id = ?').bind(userId).first();
+```
+
+**Durable Objects** - Accessed by name for consistency:
+```typescript
+const id = env.ROOM_DO.idFromName(roomId);
+const stub = env.ROOM_DO.get(id);
+```
+
+**Authentication** - Via middleware:
+```typescript
+app.get('/path', requireAuth(), async (c) => { ... });
 ```
 
 ## Documentation
