@@ -284,19 +284,12 @@ app.post('/_matrix/client/v3/refresh', async (c) => {
 
   const { userId, deviceId, accessTokenId } = tokenData;
 
-  // Delete old refresh token from KV (token rotation - single use)
-  await c.env.SESSIONS.delete(`refresh:${refreshTokenHash}`);
-
-  // Delete old access token from D1
-  await c.env.DB.prepare(
-    `DELETE FROM access_tokens WHERE token_id = ?`
-  ).bind(accessTokenId).run();
-
-  // Generate new access token
+  // Generate new access token FIRST (before deleting old)
   const newAccessToken = await generateAccessToken();
   const newTokenHash = await hashToken(newAccessToken);
   const newTokenId = await generateOpaqueId(16);
 
+  // Create new access token in D1 first
   await createAccessToken(c.env.DB, newTokenId, newTokenHash, userId, deviceId);
 
   // Generate new refresh token
@@ -314,6 +307,12 @@ app.post('/_matrix/client/v3/refresh', async (c) => {
     }),
     { expirationTtl: 7 * 24 * 60 * 60 } // 7 days
   );
+
+  // NOW safe to delete old tokens (they're replaced)
+  await c.env.SESSIONS.delete(`refresh:${refreshTokenHash}`);
+  await c.env.DB.prepare(
+    `DELETE FROM access_tokens WHERE token_id = ?`
+  ).bind(accessTokenId).run();
 
   // Access token expires in 1 hour
   const expiresInMs = 60 * 60 * 1000;
