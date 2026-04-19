@@ -600,14 +600,36 @@ app.get('/_matrix/federation/v1/query/profile', async (c) => {
 // GET /_matrix/federation/v1/user/devices/:userId
 app.get('/_matrix/federation/v1/user/devices/:userId', async (c) => {
   const userId = c.req.param('userId');
+  const env = c.env;
 
-  // This should return device keys and cross-signing keys.
-  // For simplicity, we return an empty response; implement using Durable Objects.
-  // This endpoint is already implemented in the existing federation.ts,
-  // but we include it here for completeness.
-  // (The existing file already has a detailed implementation.)
-  // We'll defer to the existing code later; for now, a placeholder.
-  return c.json({ user_id: userId, devices: [] });
+  // Get UserKeysDO to fetch device keys
+  const id = env.USER_KEYS_DO.idFromName(userId);
+  const userKeysDO = env.USER_KEYS_DO.get(id);
+
+  // Fetch device keys from Durable Object
+  const devicesResponse = await userKeysDO.fetch(new Request('http://internal/device-keys/list'));
+  const deviceIds = devicesResponse.ok ? await devicesResponse.json<string[]>() : [];
+
+  const devices: Array<{ device_id: string; keys: any }> = [];
+  for (const deviceId of deviceIds) {
+    const keyResponse = await userKeysDO.fetch(new Request(`http://internal/device-keys/get?device_id=${encodeURIComponent(deviceId)}`));
+    if (keyResponse.ok) {
+      const keys = await keyResponse.json();
+      devices.push({ device_id: deviceId, keys });
+    }
+  }
+
+  // Also fetch cross-signing keys for federation
+  const csResponse = await userKeysDO.fetch(new Request('http://internal/cross-signing/get'));
+  const crossSigning: Record<string, unknown> = csResponse.ok ? await csResponse.json() : {};
+
+  return c.json({
+    user_id: userId,
+    devices,
+    master: crossSigning.master,
+    self_signing: crossSigning.self_signing,
+    user_signing: crossSigning.user_signing,
+  });
 });
 
 // ============================================
