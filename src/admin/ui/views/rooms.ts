@@ -754,11 +754,10 @@ export const roomsFunctions = (): string => `
       if (search) url += '&search=' + encodeURIComponent(search);
       
       const data = await api.get(url);
-      
-      // Update stats
-      await loadRoomStats();
-      
       currentRooms = data.items || [];
+      
+      // Update stats (non-blocking, don't await)
+      loadRoomStats().catch(err => console.error('[rooms] Stats error:', err));
       
       // Apply filters
       let filteredRooms = filterRoomItems(currentRooms);
@@ -822,7 +821,7 @@ export const roomsFunctions = (): string => `
   async function loadRoomStats() {
     try {
       const allRooms = await api.get('/rooms?limit=1');
-      const total = allRooms.total || 0;
+      const total = allRooms?.total || 0;
       document.getElementById('totalRoomsCount').textContent = total;
       
       // Count public/private
