@@ -6,6 +6,7 @@ import { Errors } from '../utils/errors';
 import { requireAuth, optionalAuth } from '../middleware/auth';
 import { getUserById, updateUserProfile } from '../services/database';
 import { parseUserId, isLocalServerName } from '../utils/ids';
+import { fetchFederatedProfile } from '../services/federated-profile';
 
 const app = new Hono<AppEnv>();
 
@@ -19,26 +20,42 @@ app.get('/_matrix/client/v3/profile/:userId', optionalAuth(), async (c) => {
     return Errors.invalidParam('user_id', 'Invalid user ID format').toResponse();
   }
 
-  if (!isLocalServerName(parsed.serverName, c.env.SERVER_NAME)) {
-    // Remote user - would need federation lookup
+  // Check if local user
+  if (isLocalServerName(parsed.serverName, c.env.SERVER_NAME)) {
+    const user = await getUserById(c.env.DB, targetUserId);
+    if (!user) {
+      return Errors.notFound('User not found').toResponse();
+    }
+
+    console.log('[profile] Fetching profile for:', targetUserId, {
+      hasDisplayName: !!user.display_name,
+      hasAvatar: !!user.avatar_url,
+    });
+
+    // Always return both fields (even if null) to indicate user exists
+    // Element X uses this to verify users from directory search
+    return c.json({
+      displayname: user.display_name || null,
+      avatar_url: user.avatar_url || null,
+    });
+  }
+
+  // Remote user - try federated lookup
+  console.log('[profile] Attempting federated profile lookup for:', targetUserId);
+  const federatedProfile = await fetchFederatedProfile(
+    targetUserId,
+    c.env.DB,
+    c.env.CACHE,
+    c.env
+  );
+
+  if (!federatedProfile) {
     return Errors.notFound('User not found').toResponse();
   }
 
-  const user = await getUserById(c.env.DB, targetUserId);
-  if (!user) {
-    return Errors.notFound('User not found').toResponse();
-  }
-
-  console.log('[profile] Fetching profile for:', targetUserId, {
-    hasDisplayName: !!user.display_name,
-    hasAvatar: !!user.avatar_url,
-  });
-
-  // Always return both fields (even if null) to indicate user exists
-  // Element X uses this to verify users from directory search
   return c.json({
-    displayname: user.display_name || null,
-    avatar_url: user.avatar_url || null,
+    displayname: federatedProfile.displayname,
+    avatar_url: federatedProfile.avatar_url,
   });
 });
 
