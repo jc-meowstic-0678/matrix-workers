@@ -128,7 +128,7 @@ After systematic review, most flagged issues are:
 - **Acceptable patterns** - Intentional fallbacks, proper guards in place
 - **Intentional design** - Type assertions for external data (Matrix spec)
 
-**Actual bugs fixed**: ~16 issues in 5 files
+**Actual bugs fixed**: ~18 issues in 6 files
 **Issues reviewed as safe**: ~70+
 
 ---
@@ -142,8 +142,8 @@ After systematic review, most flagged issues are:
 
 ### R2 Media Operations (~22 operations)
 - **PUT operations**: Properly paired with D1 metadata insert ✅
-  - `src/api/media.ts:56` (R2 put) → `68` (D1 insert)
-  - `src/api/media.ts:439` (R2 put) → `448` (D1 insert)
+  - `src/api/media.ts:56` (R2 put) → `68` (D1 insert) ✅ **FIXED**
+  - `src/api/media.ts:439` (R2 put) → `448` (D1 insert) ✅ **FIXED**
 - **GET operations**: R2 checked first, D1 metadata for content-type ✅
 - **DELETE operations**: D1 then R2 (correct order) ✅
 - **Async uploads**: Race condition mitigated with state column ✅
@@ -154,10 +154,11 @@ After systematic review, most flagged issues are:
 - **ACCOUNT_DATA**: Fallback storage working ✅
 
 ### Findings
-- **No critical bugs found** in D1/R2/KV operations
+- **R2/D1 rollback**: Fixed missing rollback on D1 failure ✅
+- Other operations: No bugs found
 - The codebase correctly:
   - Uses parameterized queries (no SQL injection)
-  - Pairs R2 puts with D1 inserts
+  - Pairs R2 puts with D1 inserts (now with rollback)
   - Uses proper error handling patterns
   - Handles async ops with state machine
 
