@@ -214,12 +214,17 @@ async function createInitialRoomEvents(
     const failedInvites: string[] = [];
     for (const invitee of options.invite) {
       try {
+        console.log(`[createRoom] Processing invite for ${invitee} in room ${roomId}`);
         const inviteContent: RoomMemberContent = {
           membership: 'invite',
           is_direct: options.is_direct,
         };
         const inviteEventId = await createEvent('m.room.member', inviteContent, invitee);
         await updateMembership(db, roomId, invitee, 'invite', inviteEventId);
+        
+        // Verify invite was stored
+        const membership = await getMembership(db, roomId, invitee);
+        console.log(`[createRoom] Invite stored for ${invitee}:`, membership);
       } catch (err) {
         console.error(`[createRoom] Failed to invite ${invitee}:`, err);
         failedInvites.push(invitee);
@@ -1105,9 +1110,15 @@ app.post('/_matrix/client/v3/rooms/:roomId/invite', requireAuth(), async (c) => 
 
   await storeEvent(c.env.DB, event);
   await updateMembership(c.env.DB, roomId, inviteeId, 'invite', eventId);
+  
+  console.log(`[invite] Invite sent for ${inviteeId} in room ${roomId}, event ${eventId}`);
 
   // Notify room members and the invitee about the invite
   await notifyUsersOfEvent(c.env, roomId, eventId, 'm.room.member');
+  
+  // Verify it was stored
+  const verifyMembership = await getMembership(c.env.DB, roomId, inviteeId);
+  console.log(`[invite] Verified membership for ${inviteeId}:`, verifyMembership);
 
   return c.json({});
 });
