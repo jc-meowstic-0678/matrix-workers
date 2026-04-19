@@ -8,6 +8,7 @@ import { getUserById } from '../services/database';
 import { generateLoginToken, generateOpaqueId } from '../utils/ids';
 import { hashToken } from '../utils/crypto';
 import { encryptSecret } from './oidc-auth';
+import { removeUserFts } from '../services/fts-indexer';
 import { fetchOIDCDiscovery } from '../services/oidc';
 
 const app = new Hono<AppEnv>();
@@ -300,6 +301,9 @@ app.delete('/admin/api/users/:userId', requireAdminAuth, async (c) => {
 
   // Revoke all access tokens
   await db.prepare('DELETE FROM access_tokens WHERE user_id = ?').bind(userId).run();
+
+  // Clean up FTS index so user doesn't appear in search
+  await removeUserFts(db, userId);
 
   // Invalidate stats cache
   await invalidateStatsCache(c.env);
@@ -1944,6 +1948,9 @@ app.post('/_synapse/admin/v1/deactivate/:userId', requireAdminAuth, async (c) =>
 
   // Revoke all access tokens
   await db.prepare('DELETE FROM access_tokens WHERE user_id = ?').bind(userId).run();
+
+  // Clean up FTS index
+  await removeUserFts(db, userId);
 
   // Invalidate stats cache
   await invalidateStatsCache(c.env);

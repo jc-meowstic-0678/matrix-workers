@@ -6,7 +6,7 @@ import type { User, CreateUserRequest, UpdateUserRequest, ResetPasswordRequest, 
 import { requireAdminAuth } from '../auth';
 import { hashPassword } from '../../utils/crypto';
 import { formatUserId } from '../../utils/ids';
-import { indexUserFts, searchUsersFts } from '../../services/fts-indexer';
+import { indexUserFts, searchUsersFts, removeUserFts } from '../../services/fts-indexer';
 
 type AdminApiEnv = { Bindings: Env; Variables: Variables };
 
@@ -182,6 +182,9 @@ usersApi.delete('/users/:userId', requireAdminAuth, async (c) => {
     .bind(Date.now(), userId).run();
 
   await db.prepare('DELETE FROM access_tokens WHERE user_id = ?').bind(userId).run();
+
+  // Clean up FTS index so user doesn't appear in search results
+  await removeUserFts(db, userId);
 
   return c.json({ success: true });
 });

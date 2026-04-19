@@ -156,6 +156,10 @@ app.post('/_matrix/client/v3/account/deactivate', requireAuth(), async (c) => {
   // Delete all access tokens
   await deleteAllUserTokens(db, userId);
 
+  // Clean up FTS index
+  const { removeUserFts } = await import('../services/fts-indexer');
+  await removeUserFts(db, userId);
+
   // If erase is true, remove personal data
   if (erase) {
     // Clear display name and avatar
