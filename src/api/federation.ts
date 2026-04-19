@@ -207,7 +207,7 @@ app.put('/_matrix/federation/v1/send/:txnId', async (c) => {
 
   // Verify origin matches header (done by federation auth)
   if (body.origin !== origin) {
-    return c.json({ error: 'Origin mismatch' }, 400);
+    return Errors.forbidden('Origin mismatch').toResponse();
   }
 
   // Check for duplicate transaction (idempotency)
