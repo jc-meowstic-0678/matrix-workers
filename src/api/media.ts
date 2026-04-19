@@ -64,11 +64,18 @@ app.post('/_matrix/media/v3/upload', requireAuth(), async (c) => {
     },
   });
 
-  // Store metadata in D1
-  await c.env.DB.prepare(
-    `INSERT INTO media (media_id, user_id, content_type, content_length, filename, created_at)
-     VALUES (?, ?, ?, ?, ?, ?)`
-  ).bind(mediaId, userId, contentType, body.byteLength, filename || null, Date.now()).run();
+  try {
+    // Store metadata in D1
+    await c.env.DB.prepare(
+      `INSERT INTO media (media_id, user_id, content_type, content_length, filename, created_at)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    ).bind(mediaId, userId, contentType, body.byteLength, filename || null, Date.now()).run();
+  } catch (dbError) {
+    // Rollback R2 on D1 failure
+    await c.env.MEDIA.delete(mediaId);
+    console.error('[media] Failed to insert metadata, rolled back R2:', dbError);
+    throw dbError;
+  }
 
   return c.json({
     content_uri: mxcUri,
@@ -445,10 +452,16 @@ app.post('/_matrix/client/v1/media/upload', requireAuth(), async (c) => {
     },
   });
 
-  await c.env.DB.prepare(
-    `INSERT INTO media (media_id, user_id, content_type, content_length, filename, created_at)
-     VALUES (?, ?, ?, ?, ?, ?)`
-  ).bind(mediaId, userId, contentType, body.byteLength, filename || null, Date.now()).run();
+  try {
+    await c.env.DB.prepare(
+      `INSERT INTO media (media_id, user_id, content_type, content_length, filename, created_at)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    ).bind(mediaId, userId, contentType, body.byteLength, filename || null, Date.now()).run();
+  } catch (dbError) {
+    await c.env.MEDIA.delete(mediaId);
+    console.error('[media] Failed to insert metadata, rolled back R2:', dbError);
+    throw dbError;
+  }
 
   return c.json({ content_uri: mxcUri });
 });
