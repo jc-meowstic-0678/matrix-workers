@@ -133,6 +133,36 @@ After systematic review, most flagged issues are:
 
 ---
 
+## P4 - Storage Operations Review (D1/R2/KV)
+
+### D1 Database Operations (~1222 queries)
+- **Parameterization**: All queries use parameterized `bind()` ✅
+- **Transaction handling**: Uses D1's implicit transactions (auto-commit) ✅
+- **Error handling**: Most mutations have try/catch in API layer ✅
+
+### R2 Media Operations (~22 operations)
+- **PUT operations**: Properly paired with D1 metadata insert ✅
+  - `src/api/media.ts:56` (R2 put) → `68` (D1 insert)
+  - `src/api/media.ts:439` (R2 put) → `448` (D1 insert)
+- **GET operations**: R2 checked first, D1 metadata for content-type ✅
+- **DELETE operations**: D1 then R2 (correct order) ✅
+- **Async uploads**: Race condition mitigated with state column ✅
+
+### KV Operations (~76 operations)
+- **Sessions**: Proper TTL expiration in SESSIONS ✅
+- **Cache**: TTL-based expiration in CACHE ✅
+- **ACCOUNT_DATA**: Fallback storage working ✅
+
+### Findings
+- **No critical bugs found** in D1/R2/KV operations
+- The codebase correctly:
+  - Uses parameterized queries (no SQL injection)
+  - Pairs R2 puts with D1 inserts
+  - Uses proper error handling patterns
+  - Handles async ops with state machine
+
+---
+
 ## Recommended Fix Order
 
 1. **Fix P0 SQL Injection** - Highest security risk
