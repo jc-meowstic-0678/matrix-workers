@@ -13,7 +13,7 @@ const securityApi = new Hono<AdminApiEnv>();
 securityApi.get('/security/sessions', requireAdminAuth, async (c) => {
   try {
     const db = c.env.DB;
-    const limit = Math.min(parseInt(c.req.query('limit') || '100'), 500);
+    const limit = Math.min(parseInt(c.req.query('limit') || '100', 10) || 100, 500);
 
     const sessions = await db.prepare(`
       SELECT 

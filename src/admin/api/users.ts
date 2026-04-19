@@ -15,8 +15,8 @@ const usersApi = new Hono<AdminApiEnv>();
 // GET /api/users - List users
 usersApi.get('/users', requireAdminAuth, async (c) => {
   const db = c.env.DB;
-  const limit = Math.min(parseInt(c.req.query('limit') || '50'), 100);
-  const offset = parseInt(c.req.query('offset') || '0');
+  const limit = Math.min(parseInt(c.req.query('limit') || '50', 10) || 50, 100);
+  const offset = Math.max(parseInt(c.req.query('offset') || '0', 10) || 0, 0);
   const search = c.req.query('search');
 
   let query = `
@@ -235,8 +235,8 @@ usersApi.get('/users/:userId/sessions', requireAdminAuth, async (c) => {
 // GET /api/users/active - Get most active users
 usersApi.get('/users/active', requireAdminAuth, async (c) => {
   const db = c.env.DB;
-  const limit = Math.min(parseInt(c.req.query('limit') || '10'), 50);
-  const days = parseInt(c.req.query('days') || '7');
+  const limit = Math.min(parseInt(c.req.query('limit') || '10', 10) || 10, 50);
+  const days = Math.max(parseInt(c.req.query('days') || '7', 10) || 7, 1);
   const sinceTs = Date.now() - (days * 24 * 60 * 60 * 1000);
 
   const activeUsers = await db.prepare(`

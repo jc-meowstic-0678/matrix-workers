@@ -12,8 +12,8 @@ const mediaApi = new Hono<AdminApiEnv>();
 // GET /api/media - List media files
 mediaApi.get('/media', requireAdminAuth, async (c) => {
   const db = c.env.DB;
-  const limit = Math.min(parseInt(c.req.query('limit') || '50'), 100);
-  const offset = parseInt(c.req.query('offset') || '0');
+  const limit = Math.min(parseInt(c.req.query('limit') || '50', 10) || 50, 100);
+  const offset = Math.max(parseInt(c.req.query('offset') || '0', 10) || 0, 0);
 
   const media = await db.prepare(`
     SELECT media_id, user_id, content_type, content_length, filename, created_at, quarantined
