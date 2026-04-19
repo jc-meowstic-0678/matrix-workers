@@ -40,8 +40,10 @@ export async function fetchFederatedProfile(
   
   try {
     // Discover the remote server
+    console.log(`[federated-profile] Discovering server: ${serverName}`);
     const discovery = await discoverServer(serverName, cache);
     const serverUrl = buildServerUrl(discovery);
+    console.log(`[federated-profile] Server URL: ${serverUrl}`);
     
     // Fetch remote server keys for verification
     const serverKeys = await fetchRemoteServerKeys(serverName, db, cache);
@@ -49,10 +51,12 @@ export async function fetchFederatedProfile(
       console.warn(`[federated-profile] No keys for ${serverName}`);
       return null;
     }
+    console.log(`[federated-profile] Got ${serverKeys.length} keys for ${serverName}`);
     
     // Build the request URL
     const encodedUserId = encodeURIComponent(userId);
     const profileUrl = `${serverUrl}/_matrix/federation/v1/query/profile?user_id=${encodedUserId}`;
+    console.log(`[federated-profile] Fetching: ${profileUrl}`);
     
     // Fetch the profile
     const response = await fetch(profileUrl, {
