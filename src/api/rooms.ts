@@ -344,8 +344,12 @@ app.post('/_matrix/client/v3/createRoom', requireAuth(), async (c) => {
     console.log('[createRoom] Initialized m.fully_read marker for creator');
   } catch (err) {
     console.error('[createRoom] Failed to create initial room events:', err);
-    // Still return success since room was created, but log the error
-    // In production, we should probably roll back or return an error
+    // Clean up the room record since we can't return a broken room
+    await c.env.DB.prepare('DELETE FROM rooms WHERE room_id = ?').bind(roomId).run();
+    return c.json({
+      errcode: 'M_INTERNAL_ERROR',
+      error: 'Failed to create room events'
+    }, 500);
   }
 
   // Create room alias if provided
