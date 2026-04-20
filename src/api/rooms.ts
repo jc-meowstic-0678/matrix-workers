@@ -361,6 +361,10 @@ app.post('/_matrix/client/v3/createRoom', requireAuth(), async (c) => {
   // Notify the creator's sync that the room was created
   await notifyUsersOfEvent(c.env, roomId, roomId, 'm.room.create');
 
+  // Invalidate the user's precomputed lists cache so new room appears in sync immediately
+  const cacheKey = `precomputed_lists:${userId}`;
+  await c.env.CACHE.delete(cacheKey);
+
   return c.json({
     room_id: roomId,
     room_alias: room_alias_local_part
