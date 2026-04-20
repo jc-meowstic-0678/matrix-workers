@@ -239,16 +239,14 @@ app.put('/_matrix/client/v1/rooms/:roomId/call', requireAuth(), async (c) => {
   const content = { memberships };
   const now = Date.now();
 
-  // Insert or update room_state
+  // Insert or update room_state (only room_state columns)
   await db.prepare(`
-    INSERT INTO room_state (room_id, event_type, state_key, event_id, content, sender, origin_server_ts)
-    VALUES (?, 'm.call.member', ?, ?, ?, ?, ?)
+    INSERT INTO room_state (room_id, event_type, state_key, event_id, content)
+    VALUES (?, 'm.call.member', ?, ?, ?)
     ON CONFLICT (room_id, event_type, state_key) DO UPDATE SET
       event_id = excluded.event_id,
-      content = excluded.content,
-      sender = excluded.sender,
-      origin_server_ts = excluded.origin_server_ts
-  `).bind(roomId, userId, eventId, JSON.stringify(content), userId, now).run();
+      content = excluded.content
+  `).bind(roomId, userId, eventId, JSON.stringify(content)).run();
 
   // Insert into events table for sync
   await db.prepare(`

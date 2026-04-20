@@ -551,18 +551,19 @@ export class OptimizedSlidingSyncHandler {
     _config: RoomSubscription,
     timelineLimit: number
   ): Promise<RoomResult> {
-    // Get room state
+    // Get room state with event details via JOIN
     const stateQuery = await this.db.prepare(`
-      SELECT event_id, event_type, state_key, sender, content, origin_server_ts, depth
-      FROM room_state
-      WHERE room_id = ?
-      ORDER BY depth ASC
+      SELECT rs.event_id, rs.event_type, rs.state_key, e.sender, e.content, e.origin_server_ts, e.depth
+      FROM room_state rs
+      JOIN events e ON rs.event_id = e.event_id
+      WHERE rs.room_id = ?
+      ORDER BY e.depth ASC
       LIMIT 100
     `).bind(roomId).all();
     
     const state = (stateQuery.results || []).map((row: any) => ({
       event_id: row.event_id,
-      type: row.type,
+      type: row.event_type,
       state_key: row.state_key,
       sender: row.sender,
       content: typeof row.content === 'string' ? JSON.parse(row.content) : row.content,
