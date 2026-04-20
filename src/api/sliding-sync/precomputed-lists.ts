@@ -331,19 +331,30 @@ export class PrecomputedListManager {
     }
 
     if (filters.room_name_like) {
-      clauses.push(`r.name LIKE ?`);
+      clauses.push(`EXISTS (
+        SELECT 1 FROM room_state rs 
+        JOIN events e ON rs.event_id = e.event_id
+        WHERE rs.room_id = r.room_id AND rs.event_type = 'm.room.name' AND rs.state_key = ''
+        AND JSON_EXTRACT(e.content, '$.name') LIKE ?
+      )`);
       params.push(`%${filters.room_name_like}%`);
     }
 
     if (filters.is_dm !== undefined) {
       if (filters.is_dm) {
-        clauses.push(`r.name IS NULL AND (
+        clauses.push(`NOT EXISTS (
+          SELECT 1 FROM room_state rs 
+          WHERE rs.room_id = r.room_id AND rs.event_type = 'm.room.name' AND rs.state_key = ''
+        ) AND (
           SELECT COUNT(*) 
           FROM room_memberships 
           WHERE room_id = r.room_id AND membership = 'join'
         ) = 2`);
       } else {
-        clauses.push(`(r.name IS NOT NULL OR (
+        clauses.push(`(EXISTS (
+          SELECT 1 FROM room_state rs 
+          WHERE rs.room_id = r.room_id AND rs.event_type = 'm.room.name' AND rs.state_key = ''
+        ) OR (
           SELECT COUNT(*) 
           FROM room_memberships 
           WHERE room_id = r.room_id AND membership = 'join'
@@ -393,7 +404,12 @@ export class PrecomputedListManager {
         WHERE room_id = rm.room_id
       ) DESC`;
     } else if (sort.includes('by_name')) {
-      return ` ORDER BY r.name ASC NULLS LAST`;
+      return ` ORDER BY (
+        SELECT JSON_EXTRACT(e.content, '$.name') 
+        FROM room_state rs 
+        JOIN events e ON rs.event_id = e.event_id
+        WHERE rs.room_id = r.room_id AND rs.event_type = 'm.room.name' AND rs.state_key = ''
+      ) ASC`;
     } else if (sort.includes('by_importance')) {
       return ` ORDER BY 
         CASE 

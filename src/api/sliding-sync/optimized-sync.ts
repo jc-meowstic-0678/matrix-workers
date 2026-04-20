@@ -397,19 +397,22 @@ export class OptimizedSlidingSyncHandler {
     }
     
     if (sort.includes('by_name')) {
-      // Get room names
+      // Get room names from room_state
       const placeholders = roomIds.map(() => '?').join(',');
       const results = await this.pool.executeQuery<{
         room_id: string;
         name: string | null;
       }>(
-        `SELECT room_id, name FROM rooms WHERE room_id IN (${placeholders})`,
+        `SELECT rs.room_id, e.content as name 
+         FROM room_state rs 
+         JOIN events e ON rs.event_id = e.event_id 
+         WHERE rs.room_id IN (${placeholders}) AND rs.event_type = 'm.room.name' AND rs.state_key = ''`,
         roomIds,
         'high'
       );
       
       // Sort by name
-      const nameMap = new Map(results.map(r => [r.room_id, r.name || '']));
+      const nameMap = new Map(results.map(r => [r.room_id, r.name ? JSON.parse(r.name).name : '']));
       return [...roomIds].sort((a, b) => 
         (nameMap.get(a) || '').localeCompare(nameMap.get(b) || '')
       );

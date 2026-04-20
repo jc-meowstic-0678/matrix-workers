@@ -150,10 +150,26 @@ export class CachedSlidingSyncHandler {
       let query = `
         SELECT 
           r.room_id,
-          r.name,
-          r.topic,
-          r.avatar_url,
-          r.canonical_alias,
+          COALESCE(
+            (SELECT JSON_EXTRACT(e.content, '$.name') FROM room_state rs JOIN events e ON rs.event_id = e.event_id 
+             WHERE rs.room_id = r.room_id AND rs.event_type = 'm.room.name' AND rs.state_key = ''),
+            NULL
+          ) as name,
+          COALESCE(
+            (SELECT JSON_EXTRACT(e.content, '$.topic') FROM room_state rs JOIN events e ON rs.event_id = e.event_id 
+             WHERE rs.room_id = r.room_id AND rs.event_type = 'm.room.topic' AND rs.state_key = ''),
+            NULL
+          ) as topic,
+          COALESCE(
+            (SELECT JSON_EXTRACT(e.content, '$.url') FROM room_state rs JOIN events e ON rs.event_id = e.event_id 
+             WHERE rs.room_id = r.room_id AND rs.event_type = 'm.room.avatar' AND rs.state_key = ''),
+            NULL
+          ) as avatar_url,
+          COALESCE(
+            (SELECT JSON_EXTRACT(e.content, '$.alias') FROM room_state rs JOIN events e ON rs.event_id = e.event_id 
+             WHERE rs.room_id = r.room_id AND rs.event_type = 'm.room.canonical_alias' AND rs.state_key = ''),
+            NULL
+          ) as canonical_alias,
           COALESCE(
             (SELECT COUNT(*) FROM room_memberships WHERE room_id = r.room_id AND membership = 'join'),
             0
