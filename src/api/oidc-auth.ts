@@ -524,13 +524,28 @@ app.post('/_matrix/client/unstable/org.matrix.msc3861/account/identity/reset', r
   const userId = c.get('userId');
   const db = c.env.DB;
 
+  console.log(`[identity-reset] Starting identity reset for user: ${userId}`);
+
   try {
     // Delete cross-signing keys from Durable Object (primary storage)
     const stub = getUserKeysDO(c.env, userId);
-    await stub.fetch(new Request('http://internal/cross-signing/delete', {
+    const deletePromise = stub.fetch(new Request('http://internal/cross-signing/delete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     }));
+
+    // Add timeout to prevent hanging forever
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('DO request timeout')), 5000)
+    );
+    
+    // Race between DO request and timeout
+    try {
+      await Promise.race([deletePromise, timeoutPromise]);
+    } catch (timeoutError) {
+      console.error(`[identity-reset] DO request timed out for ${userId}:`, timeoutError);
+      // Still try to continue with D1 cleanup
+    }
 
     // Delete cross-signing keys from D1 (backup storage)
     await db.prepare('DELETE FROM cross_signing_keys WHERE user_id = ?').bind(userId).run();
@@ -545,7 +560,7 @@ app.post('/_matrix/client/unstable/org.matrix.msc3861/account/identity/reset', r
       VALUES (?, NULL, 'cross_signing_reset', ?)
     `).bind(userId, streamPosition).run();
 
-    console.log(`[OIDC] Cross-signing identity reset for user ${userId}`);
+    console.log(`[identity-reset] Completed identity reset for user: ${userId}`);
 
     // Return empty object on success per MSC3861
     return c.json({});
