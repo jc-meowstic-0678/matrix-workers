@@ -4,7 +4,7 @@ import { Hono } from 'hono';
 import type { AppEnv, RoomCreateContent, RoomMemberContent, PDU } from '../types';
 import { Errors } from '../utils/errors';
 import { requireAuth } from '../middleware/auth';
-import { generateRoomId, generateEventId, formatRoomAlias } from '../utils/ids';
+import { generateRoomId, generateEventId, formatRoomAlias, parseUserId } from '../utils/ids';
 import { invalidateRoomCache } from '../services/room-cache';
 import { isRoomVersionSupported, getDefaultRoomVersion } from '../services/room-versions';
 import { calculateContentHash } from '../utils/crypto';
@@ -25,6 +25,7 @@ import {
   getEvent,
   notifyUsersOfEvent,
 } from '../services/database';
+import { sendInviteViaFederation } from '../services/federation-invite';
 import type { JoinResult } from '../workflows';
 
 const app = new Hono<AppEnv>();
@@ -1087,6 +1088,71 @@ app.post('/_matrix/client/v3/rooms/:roomId/invite', requireAuth(), async (c) => 
   }
   if (inviteeMembership?.membership === 'invite') {
     return c.json({}); // Already invited, idempotent
+  }
+
+  // Check if invitee is a remote user - send invite via federation
+  const parsedInvitee = parseUserId(inviteeId);
+  const isRemoteUser = parsedInvitee && parsedInvitee.serverName !== c.env.SERVER_NAME;
+
+  if (isRemoteUser) {
+    console.log(`[invite] Remote user detected: ${inviteeId}, sending via federation`);
+
+    // Create invite event locally first (to record the invite)
+    const eventId = await generateEventId(c.env.SERVER_NAME);
+    const createEvent = await getStateEvent(c.env.DB, roomId, 'm.room.create');
+    const powerLevelsEvent = await getStateEvent(c.env.DB, roomId, 'm.room.power_levels');
+    const { events: latestEvents } = await getRoomEvents(c.env.DB, roomId, undefined, 1);
+
+    const authEvents: string[] = [];
+    if (createEvent) authEvents.push(createEvent.event_id);
+    if (powerLevelsEvent) authEvents.push(powerLevelsEvent.event_id);
+    if (inviterMembership) authEvents.push(inviterMembership.eventId);
+
+    const memberContent: RoomMemberContent = {
+      membership: 'invite',
+    };
+
+    const event: PDU = {
+      event_id: eventId,
+      room_id: roomId,
+      sender: userId,
+      type: 'm.room.member',
+      state_key: inviteeId,
+      content: memberContent,
+      origin_server_ts: Date.now(),
+      depth: (latestEvents[0]?.depth ?? 0) + 1,
+      auth_events: authEvents,
+      prev_events: latestEvents.map(e => e.event_id),
+    };
+
+    const hash = await calculateContentHash(event as unknown as Record<string, unknown>);
+    event.hashes = { sha256: hash };
+
+    // Store invite event locally
+    await storeEvent(c.env.DB, event);
+    await updateMembership(c.env.DB, roomId, inviteeId, 'invite', eventId);
+
+    // Send invite via federation
+    const inviteSent = await sendInviteViaFederation(
+      c.env,
+      c.env.DB,
+      roomId,
+      inviteeId,
+      event,
+      parsedInvitee.serverName
+    );
+
+    if (!inviteSent) {
+      console.error(`[invite] Failed to send invite via federation to ${parsedInvitee.serverName}`);
+      // Keep local record but warn user
+      return c.json({
+        errcode: 'M_UNKNOWN',
+        error: 'Failed to send invite to remote server'
+      }, 500);
+    }
+
+    console.log(`[invite] Invite sent via federation for ${inviteeId}, event ${eventId}`);
+    return c.json({});
   }
 
   // Create invite event
