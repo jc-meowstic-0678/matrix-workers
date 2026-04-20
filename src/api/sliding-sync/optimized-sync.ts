@@ -573,7 +573,7 @@ export class OptimizedSlidingSyncHandler {
     
     // Get room timeline
     const timelineQuery = await this.db.prepare(`
-      SELECT event_id, type, state_key, sender, content, origin_server_ts, depth, unsigned
+      SELECT event_id, event_type, state_key, sender, content, origin_server_ts, depth, unsigned
       FROM events
       WHERE room_id = ? AND event_type = 'm.room.message'
       ORDER BY origin_server_ts DESC
@@ -582,7 +582,7 @@ export class OptimizedSlidingSyncHandler {
     
     const timeline = (timelineQuery.results || []).reverse().map((row: any) => ({
       event_id: row.event_id,
-      type: row.type,
+      type: row.event_type,
       state_key: row.state_key,
       sender: row.sender,
       content: typeof row.content === 'string' ? JSON.parse(row.content) : row.content,

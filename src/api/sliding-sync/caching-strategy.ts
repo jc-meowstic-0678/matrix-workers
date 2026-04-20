@@ -68,7 +68,7 @@ interface Env {
 export class CachedSlidingSyncHandler {
   private cache: KVNamespace;
   private db: D1Database;
-  private readonly CACHE_TTL = 30_000; // 30 seconds
+  private readonly CACHE_TTL = 60_000; // 60 seconds (minimum for KV)
   private readonly ROOM_BATCH_SIZE = 50;
   private readonly CACHE_VERSION = 1;
 

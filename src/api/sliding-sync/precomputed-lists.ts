@@ -221,13 +221,14 @@ export class PrecomputedListManager {
    * Get spaces list (rooms where user is a member and room is a space)
    */
   private async getSpacesList(userId: string): Promise<string[]> {
+    // Spaces are rooms with m.space.child state events
     const result = await this.db.prepare(`
-      SELECT rm.room_id
+      SELECT DISTINCT rm.room_id
       FROM room_memberships rm
-      JOIN rooms r ON rm.room_id = r.room_id
+      JOIN room_state rs ON rm.room_id = rs.room_id
       WHERE rm.user_id = ? 
         AND rm.membership = 'join'
-        AND r.type = 'm.space'
+        AND rs.event_type = 'm.space.child'
       ORDER BY rm.created_at DESC
       LIMIT ?
     `).bind(userId, this.MAX_LIST_SIZE).all<{ room_id: string }>();
@@ -316,12 +317,18 @@ export class PrecomputedListManager {
     const clauses: string[] = [];
 
     if (filters.room_types && filters.room_types.length > 0) {
-      clauses.push(`r.type IN (${filters.room_types.map(() => '?').join(',')})`);
+      clauses.push(`EXISTS (
+        SELECT 1 FROM room_state rs 
+        WHERE rs.room_id = r.room_id AND rs.event_type IN (${filters.room_types.map(() => '?').join(',')})
+      )`);
       params.push(...filters.room_types);
     }
 
     if (filters.not_room_types && filters.not_room_types.length > 0) {
-      clauses.push(`r.type NOT IN (${filters.not_room_types.map(() => '?').join(',')})`);
+      clauses.push(`NOT EXISTS (
+        SELECT 1 FROM room_state rs 
+        WHERE rs.room_id = r.room_id AND rs.event_type IN (${filters.not_room_types.map(() => '?').join(',')})
+      )`);
       params.push(...filters.not_room_types);
     }
 
