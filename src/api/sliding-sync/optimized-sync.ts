@@ -590,11 +590,20 @@ export class OptimizedSlidingSyncHandler {
       unsigned: row.unsigned
     }));
     
-    // Get room metadata
+    // Get room metadata from room_state
     const roomQuery = await this.db.prepare(`
-      SELECT name, topic, avatar_url, canonical_alias, is_public
-      FROM rooms WHERE room_id = ?
-    `).bind(roomId).first<{ name: string | null; topic: string | null; avatar_url: string | null; canonical_alias: string | null; is_public: number }>();
+      SELECT 
+        r.is_public,
+        (SELECT JSON_EXTRACT(e.content, '$.name') FROM room_state rs JOIN events e ON rs.event_id = e.event_id 
+         WHERE rs.room_id = ? AND rs.event_type = 'm.room.name' AND rs.state_key = '') as name,
+        (SELECT JSON_EXTRACT(e.content, '$.topic') FROM room_state rs JOIN events e ON rs.event_id = e.event_id 
+         WHERE rs.room_id = ? AND rs.event_type = 'm.room.topic' AND rs.state_key = '') as topic,
+        (SELECT JSON_EXTRACT(e.content, '$.url') FROM room_state rs JOIN events e ON rs.event_id = e.event_id 
+         WHERE rs.room_id = ? AND rs.event_type = 'm.room.avatar' AND rs.state_key = '') as avatar_url,
+        (SELECT JSON_EXTRACT(e.content, '$.alias') FROM room_state rs JOIN events e ON rs.event_id = e.event_id 
+         WHERE rs.room_id = ? AND rs.event_type = 'm.room.canonical_alias' AND rs.state_key = '') as canonical_alias
+      FROM rooms r WHERE r.room_id = ?
+    `).bind(roomId, roomId, roomId, roomId, roomId).first<{ is_public: number; name: string | null; topic: string | null; avatar_url: string | null; canonical_alias: string | null }>();
     
     return {
       room_id: roomId,

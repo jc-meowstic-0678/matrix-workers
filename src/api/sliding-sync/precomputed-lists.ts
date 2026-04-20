@@ -326,7 +326,10 @@ export class PrecomputedListManager {
     }
 
     if (filters.is_encrypted !== undefined) {
-      clauses.push(`r.encrypted = ?`);
+      clauses.push(`EXISTS (
+        SELECT 1 FROM room_state rs 
+        WHERE rs.room_id = r.room_id AND rs.event_type = 'm.room.encryption'
+      ) = ?`);
       params.push(filters.is_encrypted ? 1 : 0);
     }
 
