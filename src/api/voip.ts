@@ -241,9 +241,9 @@ app.put('/_matrix/client/v1/rooms/:roomId/call', requireAuth(), async (c) => {
 
   // Insert or update room_state
   await db.prepare(`
-    INSERT INTO room_state (room_id, type, state_key, event_id, content, sender, origin_server_ts)
+    INSERT INTO room_state (room_id, event_type, state_key, event_id, content, sender, origin_server_ts)
     VALUES (?, 'm.call.member', ?, ?, ?, ?, ?)
-    ON CONFLICT (room_id, type, state_key) DO UPDATE SET
+    ON CONFLICT (room_id, event_type, state_key) DO UPDATE SET
       event_id = excluded.event_id,
       content = excluded.content,
       sender = excluded.sender,
@@ -252,7 +252,7 @@ app.put('/_matrix/client/v1/rooms/:roomId/call', requireAuth(), async (c) => {
 
   // Insert into events table for sync
   await db.prepare(`
-    INSERT INTO events (event_id, room_id, type, sender, content, state_key, origin_server_ts)
+    INSERT INTO events (event_id, room_id, event_type, sender, content, state_key, origin_server_ts)
     VALUES (?, ?, 'm.call.member', ?, ?, ?, ?)
   `).bind(eventId, roomId, userId, JSON.stringify(content), userId, now).run();
 
@@ -329,7 +329,7 @@ app.delete('/_matrix/client/v1/rooms/:roomId/call', requireAuth(), async (c) => 
 
   // Insert into events table for sync
   await db.prepare(`
-    INSERT INTO events (event_id, room_id, type, sender, content, state_key, origin_server_ts)
+    INSERT INTO events (event_id, room_id, event_type, sender, content, state_key, origin_server_ts)
     VALUES (?, ?, 'm.call.member', ?, ?, ?, ?)
   `).bind(eventId, roomId, userId, JSON.stringify(content), userId, now).run();
 

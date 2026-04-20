@@ -553,7 +553,7 @@ export class OptimizedSlidingSyncHandler {
   ): Promise<RoomResult> {
     // Get room state
     const stateQuery = await this.db.prepare(`
-      SELECT event_id, type, state_key, sender, content, origin_server_ts, depth
+      SELECT event_id, event_type, state_key, sender, content, origin_server_ts, depth
       FROM room_state
       WHERE room_id = ?
       ORDER BY depth ASC
