@@ -142,13 +142,16 @@ async function createInitialRoomEvents(
     room_version: roomVersion,
   };
   const createEventId = await createEvent('m.room.create', createContent, '');
+  console.log('[createInitialRoomEvents] Created m.room.create:', createEventId);
 
   // 2. m.room.member (creator joins)
   const memberContent: RoomMemberContent = {
     membership: 'join',
   };
   const joinEventId = await createEvent('m.room.member', memberContent, creatorId);
+  console.log('[createInitialRoomEvents] Created m.room.member (join):', joinEventId);
   await updateMembership(db, roomId, creatorId, 'join', joinEventId);
+  console.log('[createInitialRoomEvents] Updated membership for creator');
 
   // 3. m.room.power_levels
   const preset = options.preset || 'private_chat';
