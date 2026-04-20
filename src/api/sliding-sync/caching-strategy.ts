@@ -343,7 +343,7 @@ export class CachedSlidingSyncHandler {
     FROM room_memberships rm
     JOIN users u ON rm.user_id = u.user_id
     WHERE rm.room_id = ? AND rm.membership = 'join'
-    ORDER BY rm.joined_at DESC
+    ORDER BY rm.created_at DESC
     LIMIT ?
   `).bind(roomId, limit).all<{
     user_id: string;

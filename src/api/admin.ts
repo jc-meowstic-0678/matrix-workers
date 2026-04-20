@@ -1095,18 +1095,18 @@ app.get('/admin/api/rooms/:roomId/events', requireAdminAuth, async (c) => {
   const before = c.req.query('before');
 
   let query = `
-    SELECT event_id, event_type, state_key, sender, content, origin_server_ts, stream_position
+    SELECT event_id, event_type, state_key, sender, content, origin_server_ts, stream_ordering
     FROM events
     WHERE room_id = ?
   `;
   const params: any[] = [roomId];
 
   if (before) {
-    query += ` AND stream_position < ?`;
+    query += ` AND stream_ordering < ?`;
     params.push(parseInt(before));
   }
 
-  query += ` ORDER BY stream_position DESC LIMIT ?`;
+  query += ` ORDER BY stream_ordering DESC LIMIT ?`;
   params.push(limit);
 
   const events = await db.prepare(query).bind(...params).all();
