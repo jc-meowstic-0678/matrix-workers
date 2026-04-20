@@ -1112,6 +1112,9 @@ app.post('/_matrix/client/v3/rooms/:roomId/invite', requireAuth(), async (c) => 
     prev_events: prevEvents,
   };
 
+  const hash = await calculateContentHash(event as unknown as Record<string, unknown>);
+  event.hashes = { sha256: hash };
+
   await storeEvent(c.env.DB, event);
   await updateMembership(c.env.DB, roomId, inviteeId, 'invite', eventId);
   
