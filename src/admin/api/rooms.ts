@@ -201,11 +201,23 @@ roomsApi.delete('/rooms/:roomId', requireAdminAuth, async (c) => {
   const roomId = decodeURIComponent(c.req.param('roomId') || '');
   const db = c.env.DB;
 
+  // Get all members to invalidate their caches
+  const members = await db.prepare('SELECT user_id FROM room_memberships WHERE room_id = ?').bind(roomId).all<{ user_id: string }>();
+
   await db.prepare('DELETE FROM room_aliases WHERE room_id = ?').bind(roomId).run();
   await db.prepare('DELETE FROM room_memberships WHERE room_id = ?').bind(roomId).run();
   await db.prepare('DELETE FROM room_state WHERE room_id = ?').bind(roomId).run();
   await db.prepare('DELETE FROM events WHERE room_id = ?').bind(roomId).run();
   await db.prepare('DELETE FROM rooms WHERE room_id = ?').bind(roomId).run();
+
+  // Invalidate precomputed lists cache for all members
+  const cacheKeyPrefix = 'precomputed_lists:';
+  for (const member of members.results) {
+    await c.env.CACHE.delete(cacheKeyPrefix + member.user_id);
+  }
+
+  // Also invalidate room cache
+  await c.env.CACHE.delete(`room:${roomId}`);
 
   return c.json({ success: true });
 });
