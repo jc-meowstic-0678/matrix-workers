@@ -802,9 +802,9 @@ export async function notifyUsersOfEvent(
   eventType: string
 ): Promise<void> {
   try {
-    // Get all joined members of the room
+    // Get all members of the room (both joined and invited)
     const members = await env.DB.prepare(
-      `SELECT user_id FROM room_memberships WHERE room_id = ? AND membership = 'join'`
+      `SELECT user_id FROM room_memberships WHERE room_id = ? AND membership IN ('join', 'invite')`
     ).bind(roomId).all<{ user_id: string }>();
 
     const memberIds = members.results.map(m => m.user_id);
