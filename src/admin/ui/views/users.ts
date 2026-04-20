@@ -1574,16 +1574,24 @@ export const usersFunctions = (): string => `
     hideModal('addDeviceModal');
   }
   
-  async function deleteDevice(deviceId) {
+async function deleteDevice(deviceId) {
     if (!currentUserId) return;
     
     confirmAction(
       'Delete Device',
-      \`Delete device \${deviceId}? The user will need to re-authenticate.\`,
+      'Delete device ' + deviceId + '? The user will need to re-authenticate.',
       async () => {
-        // This would call the device deletion API
-        showNotification('Delete device not implemented', 'info');
+        try {
+          await api.delete('/users/' + encodeURIComponent(currentUserId) + '/devices/' + encodeURIComponent(deviceId));
+          showNotification('Device deleted successfully', 'success');
+          loadUserDetails(currentUserId);
+        } catch (err) {
+          console.error('Failed to delete device:', err);
+          showNotification('Failed to delete device', 'error');
+        }
       }
+    );
+  }
     );
   }
   

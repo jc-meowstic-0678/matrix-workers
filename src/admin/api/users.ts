@@ -264,3 +264,26 @@ usersApi.get('/users/active', requireAdminAuth, async (c) => {
 });
 
 export { usersApi };
+
+// DELETE /api/users/:userId/devices/:deviceId - Delete a device
+usersApi.delete('/users/:userId/devices/:deviceId', requireAdminAuth, async (c) => {
+  const userId = decodeURIComponent(c.req.param('userId') || '');
+  const deviceId = c.req.param('deviceId') || '';
+  const db = c.env.DB;
+
+  // Delete access token for this device
+  await db.prepare('DELETE FROM access_tokens WHERE user_id = ? AND device_id = ?')
+    .bind(userId, deviceId).run();
+
+  // Delete device keys
+  await db.prepare('DELETE FROM device_keys WHERE user_id = ? AND device_id = ?')
+    .bind(userId, deviceId).run();
+
+  // Delete device
+  await db.prepare('DELETE FROM devices WHERE user_id = ? AND device_id = ?')
+    .bind(userId, deviceId).run();
+
+  console.log(`[admin] Deleted device ${deviceId} for user ${userId}`);
+
+  return c.json({ success: true });
+});
